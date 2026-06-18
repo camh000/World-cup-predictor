@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import csv
+import unicodedata
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .ratings import Rating
 
@@ -104,6 +105,103 @@ def ensure_results_file(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fh:
         csv.writer(fh).writerow(RESULTS_HEADER)
+
+
+# Names used by the official FIFA schedule that differ from data/teams.csv names.
+TEAM_NAME_ALIASES = {
+    "korea republic": "South Korea",
+    "turkiye": "Turkey",
+    "cote divoire": "Ivory Coast",
+    "cabo verde": "Cape Verde",
+    "congo dr": "DR Congo",
+    "ir iran": "Iran",
+    "usa": "United States",
+}
+
+HOST_TEAM_IDS = {"MEX", "USA", "CAN"}
+
+
+def _norm_name(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+    return "".join(c for c in s.lower() if c.isalnum())
+
+
+def build_name_index(teams: List[Team]) -> Dict[str, str]:
+    """Map normalised team names / ids (incl. known aliases) to team ids."""
+    idx: Dict[str, str] = {}
+    for t in teams:
+        idx[_norm_name(t.name)] = t.team_id
+        idx[_norm_name(t.team_id)] = t.team_id
+    for alias, canonical in TEAM_NAME_ALIASES.items():
+        target = idx.get(_norm_name(canonical))
+        if target:
+            idx[_norm_name(alias)] = target
+    return idx
+
+
+def read_official_schedule(path: Path, teams: List[Team]) -> List[MatchRecord]:
+    """Parse the official FIFA 2026 schedule CSV into played ``MatchRecord``s.
+
+    Expects columns: Match Number, Round Number, Date (DD/MM/YYYY HH:MM),
+    Location, Home Team, Away Team, Group, Result ("H - A"). Rows without a
+    numeric result, or whose teams aren't in ``teams``, are skipped (so the same
+    file can be re-imported as more matchdays are played).
+    """
+    idx = build_name_index(teams)
+    out: List[MatchRecord] = []
+    with Path(path).open("r", encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            result = (row.get("Result") or "").strip()
+            if "-" not in result:
+                continue
+            home_id = idx.get(_norm_name(row.get("Home Team", "")))
+            away_id = idx.get(_norm_name(row.get("Away Team", "")))
+            if not home_id or not away_id:
+                continue
+            try:
+                hg, ag = (int(x) for x in result.replace("–", "-").split("-"))
+            except ValueError:
+                continue
+            out.append(
+                MatchRecord(
+                    date=_parse_date(row.get("Date", "")),
+                    home_team_id=home_id,
+                    away_team_id=away_id,
+                    home_goals=hg,
+                    away_goals=ag,
+                    stage="group" if (row.get("Round Number", "").strip() in {"1", "2", "3"})
+                          else (row.get("Round Number", "").strip().lower() or "knockout"),
+                    competition="WC2026",
+                    # A host playing at home is not a neutral-venue game.
+                    neutral=home_id not in HOST_TEAM_IDS,
+                )
+            )
+    out.sort(key=lambda m: (m.date, m.home_team_id))
+    return out
+
+
+def _parse_date(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+    for fmt in ("%d/%m/%Y %H:%M", "%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return value[:10]
+
+
+def write_results(path: Path, records: List[MatchRecord]) -> None:
+    """Overwrite the results log with ``records`` (header + rows)."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(RESULTS_HEADER)
+        for r in records:
+            writer.writerow([r.date, r.home_team_id, r.away_team_id, r.home_goals,
+                             r.away_goals, r.stage, r.competition, str(r.neutral).lower()])
 
 
 def append_result(path: Path, record: MatchRecord) -> None:

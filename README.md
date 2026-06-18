@@ -7,8 +7,9 @@ become more accurate**.
 ## How it works
 
 **Predicting (Monte Carlo).** Each team has an **Elo rating**. For any match the
-Elo gap is turned into expected goals via a **Poisson model**, and a scoreline is
-drawn at random. The whole tournament — 12 groups of 4, then a 32-team knockout
+Elo gap is turned into expected goals via a **Poisson model** with a
+**Dixon–Coles** low-score correction (the independent-Poisson model under-predicts
+draws; this shifts mass into 0-0/1-1), and a scoreline is drawn at random. The whole tournament — 12 groups of 4, then a 32-team knockout
 bracket (with the 8 best third-placed teams advancing) — is simulated tens of
 thousands of times. Aggregating the outcomes gives each team's probability of
 advancing, reaching each round, and winning the trophy.
@@ -49,6 +50,7 @@ pip install -e '.[dev]'     # optional: pytest
 
 ```bash
 wcpredict reset                                   # seed ratings + default params
+wcpredict import-results --file <official_schedule.csv>  # load real results
 wcpredict simulate --sims 20000 --seed 42         # predict the champion
 wcpredict predict --match BRA ARG --knockout      # one-off match probabilities
 wcpredict update-result --home BRA --away ARG --score 3-0 --stage group
@@ -114,7 +116,9 @@ fully offline — just record results with `update-result`.
   Argentina 2115, France 2063, England 2024, Portugal 1989, Brazil 1978); the
   remaining teams are close approximations. The engine refines all of them from
   real results, so exact starting values matter less over time.
-- `data/results.csv` — append-only log of real results the engine learns from.
+- `data/results.csv` — real results the engine learns from, generated from the
+  official FIFA schedule (`data/fifa_worldcup_2026_schedule.csv`) via
+  `wcpredict import-results`. Re-run it as each matchday is played.
 - `data/historical_matches.csv` — optional past matches used by `retune`
   (illustrative sample; extend with a larger dataset for better tuning).
 

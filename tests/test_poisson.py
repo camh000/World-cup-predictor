@@ -4,7 +4,12 @@ import numpy as np
 
 from wcpredictor.config import Params
 from wcpredictor.elo import expected_score
-from wcpredictor.poisson import expected_goals, match_probabilities, simulate_scoreline
+from wcpredictor.poisson import (
+    dixon_coles_matrix,
+    expected_goals,
+    match_probabilities,
+    simulate_scoreline,
+)
 
 
 def test_expected_goals_monotonic_in_rating_diff():
@@ -34,6 +39,37 @@ def test_scoreline_reproducible_with_seed():
     lam_h, lam_a = expected_goals(80, p)
     a = simulate_scoreline(lam_h, lam_a, np.random.default_rng(7))
     b = simulate_scoreline(lam_h, lam_a, np.random.default_rng(7))
+    assert a == b
+
+
+def test_dixon_coles_matrix_normalised():
+    m = dixon_coles_matrix(1.4, 1.1, rho=-0.12, max_goals=10)
+    assert math.isclose(m.sum(), 1.0, abs_tol=1e-9)
+    assert (m >= 0).all()
+
+
+def test_rho_zero_matches_independent_poisson():
+    # rho=0 must reproduce the plain independent-Poisson probabilities exactly.
+    with_default = match_probabilities(1.5, 1.2, 10, rho=0.0)
+    independent = match_probabilities(1.5, 1.2, 10)
+    assert with_default == independent
+
+
+def test_negative_rho_increases_draw_probability():
+    _, draw_indep, _ = match_probabilities(1.3, 1.2, 10, rho=0.0)
+    _, draw_dc, _ = match_probabilities(1.3, 1.2, 10, rho=-0.15)
+    assert draw_dc > draw_indep
+
+
+def test_dc_probabilities_sum_to_one():
+    probs = match_probabilities(*expected_goals(150, Params()), Params().max_goals, rho=-0.1)
+    assert math.isclose(sum(probs), 1.0, abs_tol=1e-9)
+
+
+def test_scoreline_with_rho_reproducible():
+    lam_h, lam_a = expected_goals(40, Params())
+    a = simulate_scoreline(lam_h, lam_a, np.random.default_rng(3), rho=-0.12, max_goals=10)
+    b = simulate_scoreline(lam_h, lam_a, np.random.default_rng(3), rho=-0.12, max_goals=10)
     assert a == b
 
 

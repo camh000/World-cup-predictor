@@ -86,7 +86,7 @@ def _forecast(home: Rating, away: Rating, params: Params, neutral: bool) -> Tupl
         attack_away=away.attack, defense_home=home.defense,
         form_home=home.form, form_away=away.form,
     )
-    return match_probabilities(lam_h, lam_a, params.max_goals)
+    return match_probabilities(lam_h, lam_a, params.max_goals, params.dc_rho)
 
 
 def backtest(

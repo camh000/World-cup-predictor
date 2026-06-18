@@ -20,8 +20,10 @@ from .data_io import (
     Team,
     append_result,
     read_matches,
+    read_official_schedule,
     read_seed_ratings,
     read_teams,
+    write_results,
 )
 from .history import (
     append_prediction,
@@ -112,8 +114,9 @@ def cmd_predict(args, paths: Paths) -> int:
     away = _resolve_team(teams, args.match[1])
 
     d = ratings.elo(home) - ratings.elo(away)
-    lam_h, lam_a = expected_goals(d, params)
-    p_home, p_draw, p_away = match_probabilities(lam_h, lam_a, params.max_goals)
+    rh, ra = ratings[home], ratings[away]
+    lam_h, lam_a = expected_goals(d, params, form_home=rh.form, form_away=ra.form)
+    p_home, p_draw, p_away = match_probabilities(lam_h, lam_a, params.max_goals, params.dc_rho)
 
     print(f"\n{home} (Elo {ratings.elo(home):.0f}) vs {away} (Elo {ratings.elo(away):.0f})")
     print(f"Expected goals: {lam_h:.2f} - {lam_a:.2f}")
@@ -253,6 +256,24 @@ def cmd_ratings(args, paths: Paths) -> int:
     print("-" * 43)
     for i, (tid, r) in enumerate(ratings.ranked()[: args.top], start=1):
         print(f"{i:<4}{name_by_id.get(tid, tid):<24}{r.elo:>7.0f}{r.form:>8.2f}")
+    return 0
+
+
+def cmd_import_results(args, paths: Paths) -> int:
+    """Import played matches from the official FIFA schedule CSV into results.csv."""
+    teams = _load_teams(paths)
+    src = Path(args.file)
+    if not src.exists():
+        sys.exit(f"error: file not found: {src}")
+    records = read_official_schedule(src, teams)
+    if not records:
+        sys.exit("error: no completed matches found in the file")
+    write_results(paths.results_csv, records)
+    last = records[-1]
+    print(f"Imported {len(records)} completed match(es) -> {paths.results_csv}")
+    print(f"  date range: {records[0].date} .. {last.date}")
+    print(f"  latest: {last.home_team_id} {last.home_goals}-{last.away_goals} {last.away_team_id}")
+    print("\nNext: 'wcpredict replay' to validate, or 'wcpredict simulate' to predict.")
     return 0
 
 
@@ -406,6 +427,10 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("ratings", help="show the current Elo table")
     s.add_argument("--top", type=int, default=20)
     s.set_defaults(func=cmd_ratings)
+
+    s = sub.add_parser("import-results", help="import played matches from the official FIFA schedule CSV")
+    s.add_argument("--file", required=True, help="path to the official schedule CSV")
+    s.set_defaults(func=cmd_import_results)
 
     s = sub.add_parser("replay", help="replay already-played matches to validate the model")
     s.add_argument("--source", default=None, help="results CSV to replay (default: data/results.csv)")

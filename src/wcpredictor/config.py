@@ -55,6 +55,13 @@ class Params:
     max_goals: int = 10
     points_win: int = 3
     points_draw: int = 1
+    # Dixon-Coles low-score dependency parameter. The independent-Poisson model
+    # under-predicts draws; a negative rho shifts probability mass from 1-0/0-1
+    # into 0-0/1-1, correcting that. 0 disables the correction. Default is the
+    # literature value (Dixon & Coles 1997, ~-0.13); a sweep on the draw-heavy
+    # matchday 1 prefers a larger magnitude, but that overfits one round -- tune
+    # via `retune` once more results exist (see TODO.md).
+    dc_rho: float = -0.13
     # Tournament form overlay (see Rating.form). form_alpha is the learning rate
     # per game (0 disables form entirely); form_decay pulls form back toward 1.0
     # between games (mean reversion); form_min/max bound the multiplier.

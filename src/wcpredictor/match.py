@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 
 from .config import Params
-from .poisson import expected_goals
+from .poisson import expected_goals, simulate_scoreline
 from .ratings import RatingStore
 
 
@@ -60,8 +60,7 @@ def simulate_match(
         form_home=rh.form, form_away=ra.form,
     )
 
-    hg = int(rng.poisson(lam_h))
-    ag = int(rng.poisson(lam_a))
+    hg, ag = simulate_scoreline(lam_h, lam_a, rng, rho=params.dc_rho, max_goals=params.max_goals)
 
     if not knockout:
         winner = None if hg == ag else (home if hg > ag else away)
