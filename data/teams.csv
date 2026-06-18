@@ -1,0 +1,49 @@
+team_id,name,confederation,group,host
+MEX,Mexico,CONCACAF,A,true
+ITA,Italy,UEFA,A,false
+ECU,Ecuador,CONMEBOL,A,false
+CRC,Costa Rica,CONCACAF,A,false
+CAN,Canada,CONCACAF,B,true
+CRO,Croatia,UEFA,B,false
+AUT,Austria,UEFA,B,false
+PAN,Panama,CONCACAF,B,false
+ARG,Argentina,CONMEBOL,C,false
+URU,Uruguay,CONMEBOL,C,false
+NGA,Nigeria,CAF,C,false
+JAM,Jamaica,CONCACAF,C,false
+USA,United States,CONCACAF,D,true
+COL,Colombia,CONMEBOL,D,false
+EGY,Egypt,CAF,D,false
+CMR,Cameroon,CAF,D,false
+FRA,France,UEFA,E,false
+MAR,Morocco,CAF,E,false
+ALG,Algeria,CAF,E,false
+GHA,Ghana,CAF,E,false
+ESP,Spain,UEFA,F,false
+DEN,Denmark,UEFA,F,false
+NOR,Norway,UEFA,F,false
+CIV,Ivory Coast,CAF,F,false
+ENG,England,UEFA,G,false
+SUI,Switzerland,UEFA,G,false
+POL,Poland,UEFA,G,false
+SAU,Saudi Arabia,AFC,G,false
+BRA,Brazil,CONMEBOL,H,false
+JPN,Japan,AFC,H,false
+TUR,Turkey,UEFA,H,false
+QAT,Qatar,AFC,H,false
+POR,Portugal,UEFA,I,false
+SEN,Senegal,CAF,I,false
+AUS,Australia,AFC,I,false
+UAE,United Arab Emirates,AFC,I,false
+NED,Netherlands,UEFA,J,false
+SRB,Serbia,UEFA,J,false
+TUN,Tunisia,CAF,J,false
+NZL,New Zealand,OFC,J,false
+GER,Germany,UEFA,K,false
+IRN,Iran,AFC,K,false
+PAR,Paraguay,CONMEBOL,K,false
+SCO,Scotland,UEFA,K,false
+BEL,Belgium,UEFA,L,false
+KOR,South Korea,AFC,L,false
+UZB,Uzbekistan,AFC,L,false
+BOL,Bolivia,CONMEBOL,L,false
