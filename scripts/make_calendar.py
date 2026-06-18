@@ -61,9 +61,10 @@ def build_calendar(rows, reminder_min: int) -> str:
         "METHOD:PUBLISH",
         "X-WR-CALNAME:World Cup 2026",
     ]
+    hours, mins = divmod(MATCH_MINUTES, 60)
+    duration = "PT" + (f"{hours}H" if hours else "") + (f"{mins}M" if mins else "")
     for dt, num, home, away, group, venue in rows:
         start = dt.strftime("%Y%m%dT%H%M%SZ")
-        end = (dt + timedelta(minutes=MATCH_MINUTES)).strftime("%Y%m%dT%H%M%SZ")
         summary = _ics_escape(f"⚽ {home} v {away} (WC {group})")
         desc = _ics_escape(f"FIFA World Cup 2026 - {group}\n{home} vs {away}")
         lines += [
@@ -71,7 +72,9 @@ def build_calendar(rows, reminder_min: int) -> str:
             f"UID:wc2026-match{num}@worldcup",
             f"DTSTAMP:{stamp}",
             f"DTSTART:{start}",
-            f"DTEND:{end}",
+            # DURATION (not DTEND) so a kickoff ending at exactly midnight UTC
+            # doesn't hit Apple Calendar's ambiguous-midnight-DTEND bug.
+            f"DURATION:{duration}",
             f"SUMMARY:{summary}",
             f"LOCATION:{_ics_escape(venue)}",
             f"DESCRIPTION:{desc}",
