@@ -21,7 +21,7 @@ from wcpredictor.ratings import RatingStore
 from wcpredictor.simulate import run_simulation
 
 OUT = Path("sweepstake_odds.md")
-N_SIMS = 20000
+N_SIMS = 50000
 SEED = 7
 
 # --- the two sweepstakes -----------------------------------------------------
