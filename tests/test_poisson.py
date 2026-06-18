@@ -73,6 +73,21 @@ def test_scoreline_with_rho_reproducible():
     assert a == b
 
 
+def test_sampled_scorelines_match_exact_distribution():
+    # The (fast rejection) sampler must reproduce the exact Dixon-Coles outcome
+    # probabilities from match_probabilities, within Monte-Carlo error.
+    lam_h, lam_a, rho = 1.4, 1.2, -0.13
+    exact = match_probabilities(lam_h, lam_a, 10, rho)
+    rng = np.random.default_rng(0)
+    n = 60000
+    counts = [0, 0, 0]
+    for _ in range(n):
+        i, j = simulate_scoreline(lam_h, lam_a, rng, rho=rho)
+        counts[0 if i > j else 1 if i == j else 2] += 1
+    for emp, ex in zip((c / n for c in counts), exact):
+        assert abs(emp - ex) < 0.012
+
+
 def test_empirical_winrate_matches_elo_logistic():
     # Consistency: the Poisson model's home-win share (excluding draws) should be
     # close to the Elo logistic expectation for a given rating gap.

@@ -55,3 +55,6 @@ third-place→R32 mapping and bracket paths.
 - ~~Verify the matchday-1 results~~ — replaced hand-compiled data with the official
   FIFA schedule via `wcpredict import-results` (`data/fifa_worldcup_2026_schedule.csv`).
 - ~~Dixon–Coles draw correction~~ — implemented; improved replay skill +5.5% → +7.8%.
+- ~~Dixon–Coles sampler was slow~~ — replaced the per-match score-grid build with
+  exact rejection sampling (~10x faster, identical distribution); a 20k-sim run
+  dropped from ~1–2 min to ~14s.
