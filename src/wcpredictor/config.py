@@ -116,6 +116,14 @@ class Paths:
     def historical_csv(self) -> Path:
         return self.data_dir / "historical_matches.csv"
 
+    @property
+    def predictions_csv(self) -> Path:
+        return self.data_dir / "predictions.csv"
+
+    @property
+    def ratings_history_csv(self) -> Path:
+        return self.data_dir / "ratings_history.csv"
+
     # --- evolving state (git-ignored) ---
     @property
     def ratings_json(self) -> Path:

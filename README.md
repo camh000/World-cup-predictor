@@ -43,11 +43,29 @@ wcpredict simulate --sims 20000 --seed 42         # predict the champion
 wcpredict predict --match BRA ARG --knockout      # one-off match probabilities
 wcpredict update-result --home BRA --away ARG --score 3-0 --stage group
 wcpredict simulate --sims 20000 --seed 42         # BRA's odds have now shifted
+wcpredict accuracy                                # how good have predictions been?
 wcpredict retune --metric logloss                 # optimise hyperparameters
 wcpredict ratings --top 20                         # current Elo table
 wcpredict standings --group C                       # group view
 wcpredict fetch-results --since 2026-06-11          # optional, needs API key
 ```
+
+### Tracking accuracy over time
+
+Every recorded result is added to a prediction ledger **before** the model
+learns from it, so you always have a record of what was predicted versus what
+happened — and can tell whether the model is improving or needs adjusting:
+
+- `data/predictions.csv` — one row per match: both teams' pre-match Elo, the
+  forecast (win/draw/win probabilities + expected goals), the predicted and
+  actual outcomes, the post-match Elo and rating changes, and the per-match
+  log-loss & Brier score.
+- `data/ratings_history.csv` — every team's Elo snapshotted after each match, so
+  each team's rating trajectory through the tournament is preserved.
+
+`wcpredict accuracy` summarises the ledger: running log-loss / Brier versus a
+naive baseline, top-pick hit rate, a "skill" score, and a recent-form trend. It
+flags when accuracy is drifting and a `retune` is worth running.
 
 The live fetcher uses [football-data.org](https://www.football-data.org/); set
 `FOOTBALL_DATA_API_KEY` and install the `api` extra. Without it the engine works
@@ -69,8 +87,8 @@ fully offline — just record results with `update-result`.
 ## Project layout
 
 ```
-src/wcpredictor/   elo, poisson, match, tournament, simulate, learn, metrics, cli, ...
-data/              teams, seed ratings, results, historical matches
+src/wcpredictor/   elo, poisson, match, tournament, simulate, learn, history, metrics, cli, ...
+data/              teams, seed ratings, results, historical matches, predictions, ratings history
 state/             generated: ratings.json, params.json (git-ignored)
 tests/             pytest suite
 ```

@@ -22,6 +22,14 @@ from .data_io import (
     read_seed_ratings,
     read_teams,
 )
+from .history import (
+    append_prediction,
+    append_ratings_snapshot,
+    build_record,
+    next_seq,
+    read_predictions,
+    summarize,
+)
 from .learn import apply_result, retune
 from .match import simulate_match
 from .poisson import expected_goals, match_probabilities
@@ -143,13 +151,27 @@ def cmd_update_result(args, paths: Paths) -> int:
         neutral=not args.home_advantage,
     )
     append_result(paths.results_csv, record)
+
+    # Snapshot the pre-match model state, learn from the result, then log what we
+    # had predicted vs what happened — so accuracy can be reviewed later.
+    ratings_pre = ratings.copy()
+    seq = next_seq(paths.predictions_csv)
     dh, da = apply_result(ratings, params, record)
     paths.ensure_state_dir()
     ratings.save(paths.ratings_json)
 
+    pred = build_record(seq, ratings_pre, ratings, params, record, (dh, da))
+    append_prediction(paths.predictions_csv, pred)
+    append_ratings_snapshot(paths.ratings_history_csv, seq, record, ratings)
+
     print(f"Recorded {home} {hg}-{ag} {away}")
+    print(f"Pre-match forecast: {home} {pred.p_home * 100:.0f}%  draw "
+          f"{pred.p_draw * 100:.0f}%  {away} {pred.p_away * 100:.0f}%  "
+          f"(predicted: {pred.predicted_outcome}, actual: {pred.actual_outcome}, "
+          f"log-loss {pred.log_loss:.3f})")
     print(f"Elo update: {home} {dh:+.1f} -> {ratings.elo(home):.0f}   "
           f"{away} {da:+.1f} -> {ratings.elo(away):.0f}")
+    print(f"Logged prediction #{seq} -> {paths.predictions_csv}")
     return 0
 
 
@@ -164,10 +186,16 @@ def cmd_fetch_results(args, paths: Paths) -> int:
     except FetchError as exc:
         sys.exit(f"error: {exc}")
 
+    seq = next_seq(paths.predictions_csv)
     for rec in records:
         append_result(paths.results_csv, rec)
         if args.learn:
-            apply_result(ratings, params, rec)
+            ratings_pre = ratings.copy()
+            deltas = apply_result(ratings, params, rec)
+            pred = build_record(seq, ratings_pre, ratings, params, rec, deltas)
+            append_prediction(paths.predictions_csv, pred)
+            append_ratings_snapshot(paths.ratings_history_csv, seq, rec, ratings)
+            seq += 1
     if args.learn and records:
         paths.ensure_state_dir()
         ratings.save(paths.ratings_json)
@@ -227,6 +255,38 @@ def cmd_ratings(args, paths: Paths) -> int:
     return 0
 
 
+def cmd_accuracy(args, paths: Paths) -> int:
+    rows = read_predictions(paths.predictions_csv)
+    summary = summarize(rows, recent=args.recent)
+    if summary is None:
+        print("No predictions logged yet. Record results with 'update-result' first.")
+        return 0
+
+    print(f"\nPrediction accuracy over {summary.n} match(es)")
+    print(f"  log-loss:        {summary.log_loss:.4f}   (baseline guess {summary.baseline_log_loss:.4f})")
+    print(f"  Brier score:     {summary.brier:.4f}")
+    print(f"  top-pick hit:    {summary.hit_rate * 100:.1f}%")
+    print(f"  skill vs guess:  {summary.skill * 100:+.1f}%  (higher is better)")
+    if summary.recent_log_loss is not None:
+        trend = summary.recent_log_loss - summary.log_loss
+        arrow = "improving" if trend < 0 else "worsening"
+        print(f"  last {args.recent} log-loss: {summary.recent_log_loss:.4f}  ({arrow})")
+
+    if summary.skill < 0:
+        print("\n  ! Worse than random — consider 'wcpredict retune' or revisiting seed ratings.")
+    elif summary.recent_log_loss is not None and summary.recent_log_loss > summary.log_loss * 1.15:
+        print("\n  ! Recent accuracy is drifting — a 'wcpredict retune' may help.")
+
+    if args.last:
+        print(f"\nLast {args.last} prediction(s):")
+        for r in rows[-args.last:]:
+            mark = "OK " if r["predicted_outcome"] == r["actual_outcome"] else "miss"
+            print(f"  #{r['seq']:<3} {r['home_team_id']} {r['home_goals']}-{r['away_goals']} "
+                  f"{r['away_team_id']}  pred={r['predicted_outcome']:<5} "
+                  f"actual={r['actual_outcome']:<5} [{mark}] logloss={r['log_loss']}")
+    return 0
+
+
 # --------------------------------------------------------------------------- #
 # Argument parsing
 # --------------------------------------------------------------------------- #
@@ -276,6 +336,11 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("ratings", help="show the current Elo table")
     s.add_argument("--top", type=int, default=20)
     s.set_defaults(func=cmd_ratings)
+
+    s = sub.add_parser("accuracy", help="review prediction accuracy over recorded results")
+    s.add_argument("--recent", type=int, default=10, help="window for the recent-trend score")
+    s.add_argument("--last", type=int, default=10, help="show the last N predictions (0 to hide)")
+    s.set_defaults(func=cmd_accuracy)
 
     s = sub.add_parser("reset", help="re-seed ratings and params from data/")
     s.set_defaults(func=cmd_reset)
