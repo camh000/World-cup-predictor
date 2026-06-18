@@ -139,23 +139,47 @@ def build_name_index(teams: List[Team]) -> Dict[str, str]:
     return idx
 
 
-def read_official_schedule(path: Path, teams: List[Team]) -> List[MatchRecord]:
-    """Parse the official FIFA 2026 schedule CSV into played ``MatchRecord``s.
+def read_official_schedule(
+    path: Path,
+    teams: List[Team],
+    *,
+    allow_unknown: bool = False,
+    host_ids: Optional[set] = None,
+    competition: str = "WC2026",
+) -> List[MatchRecord]:
+    """Parse an official FIFA-format schedule CSV into played ``MatchRecord``s.
 
     Expects columns: Match Number, Round Number, Date (DD/MM/YYYY HH:MM),
     Location, Home Team, Away Team, Group, Result ("H - A"). Rows without a
-    numeric result, or whose teams aren't in ``teams``, are skipped (so the same
-    file can be re-imported as more matchdays are played).
+    numeric result are skipped (so the same file can be re-imported as more
+    matches are played).
+
+    ``allow_unknown`` keeps matches involving teams not in ``teams`` by assigning
+    a generated id from the team name (used for historical tournaments whose
+    fields differ from 2026). ``host_ids`` is the set of team ids treated as
+    playing at home (non-neutral); pass an empty set for historical World Cups,
+    whose hosts differ from 2026.
     """
+    if host_ids is None:
+        host_ids = HOST_TEAM_IDS
     idx = build_name_index(teams)
+
+    def resolve(name: str) -> Optional[str]:
+        tid = idx.get(_norm_name(name))
+        if tid:
+            return tid
+        if allow_unknown and name.strip():
+            return _norm_name(name).upper()
+        return None
+
     out: List[MatchRecord] = []
     with Path(path).open("r", encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
             result = (row.get("Result") or "").strip()
             if "-" not in result:
                 continue
-            home_id = idx.get(_norm_name(row.get("Home Team", "")))
-            away_id = idx.get(_norm_name(row.get("Away Team", "")))
+            home_id = resolve(row.get("Home Team", ""))
+            away_id = resolve(row.get("Away Team", ""))
             if not home_id or not away_id:
                 continue
             try:
@@ -171,9 +195,9 @@ def read_official_schedule(path: Path, teams: List[Team]) -> List[MatchRecord]:
                     away_goals=ag,
                     stage="group" if (row.get("Round Number", "").strip() in {"1", "2", "3"})
                           else (row.get("Round Number", "").strip().lower() or "knockout"),
-                    competition="WC2026",
+                    competition=competition,
                     # A host playing at home is not a neutral-venue game.
-                    neutral=home_id not in HOST_TEAM_IDS,
+                    neutral=home_id not in host_ids,
                 )
             )
     out.sort(key=lambda m: (m.date, m.home_team_id))

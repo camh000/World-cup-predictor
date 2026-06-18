@@ -1,40 +1,129 @@
 date,home_team_id,away_team_id,home_goals,away_goals,stage,competition,neutral
-2024-06-15,ESP,CRO,3,0,group,euro2024,true
-2024-06-16,FRA,AUT,1,0,group,euro2024,true
-2024-06-17,BEL,SVK,0,1,group,euro2024,true
-2024-06-20,GER,HUN,2,0,group,euro2024,true
-2024-06-21,ESP,ITA,1,0,group,euro2024,true
-2024-06-23,FRA,POL,1,1,group,euro2024,true
-2024-06-25,ENG,SVN,0,0,group,euro2024,true
-2024-07-05,ESP,GER,2,1,knockout,euro2024,true
-2024-07-06,POR,FRA,0,0,knockout,euro2024,true
-2024-07-09,ESP,FRA,2,1,knockout,euro2024,true
-2024-07-14,ESP,ENG,2,1,final,euro2024,true
-2024-06-20,ARG,CHI,1,0,group,copa2024,true
-2024-06-25,COL,PAR,2,1,group,copa2024,true
-2024-06-26,BRA,PAR,4,1,group,copa2024,true
-2024-06-28,URU,BOL,5,0,group,copa2024,true
-2024-07-04,ARG,ECU,1,1,knockout,copa2024,true
-2024-07-06,URU,BRA,0,0,knockout,copa2024,true
-2024-07-09,ARG,CAN,2,0,knockout,copa2024,true
-2024-07-10,COL,URU,1,0,knockout,copa2024,true
-2024-07-14,ARG,COL,1,0,final,copa2024,true
-2024-09-07,GER,HUN,5,0,nationsleague,unl,false
-2024-10-14,ENG,FIN,3,1,nationsleague,unl,false
-2024-11-17,NED,BIH,4,1,nationsleague,unl,false
-2025-03-23,FRA,CRO,2,0,knockout,unl,false
-2025-03-23,ESP,NED,3,3,knockout,unl,false
-2025-06-08,POR,ESP,2,2,final,unl,true
-2024-01-15,SEN,GAM,3,0,group,afcon2023,true
-2024-01-18,EGY,GHA,2,2,group,afcon2023,true
-2024-02-07,CIV,COD,1,0,knockout,afcon2023,true
-2024-02-11,CIV,NGA,2,1,final,afcon2023,true
-2024-02-03,QAT,UZB,1,1,knockout,asiancup,true
-2024-02-07,IRN,QAT,2,3,knockout,asiancup,true
-2024-02-10,QAT,JOR,3,1,final,asiancup,true
-2025-03-25,ARG,BRA,4,1,qualifier,wcq,false
-2025-06-10,USA,MEX,1,2,friendly,intl,true
-2025-09-09,JPN,KOR,1,1,friendly,intl,true
-2025-10-14,MAR,SEN,1,0,friendly,intl,true
-2025-11-18,CRO,ITA,2,2,friendly,intl,true
-2026-03-26,NED,GER,1,3,friendly,intl,true
+2018-06-14,RUSSIA,SAU,5,0,group,fifa_worldcup_2018_schedule,true
+2018-06-15,EGY,URU,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-15,MAR,IRN,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-15,POR,ESP,3,3,group,fifa_worldcup_2018_schedule,true
+2018-06-16,ARG,ICELAND,1,1,group,fifa_worldcup_2018_schedule,true
+2018-06-16,CRO,NIGERIA,2,0,group,fifa_worldcup_2018_schedule,true
+2018-06-16,FRA,AUS,2,1,group,fifa_worldcup_2018_schedule,true
+2018-06-16,PERU,DENMARK,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-17,BRA,SUI,1,1,group,fifa_worldcup_2018_schedule,true
+2018-06-17,COSTARICA,SERBIA,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-17,GER,MEX,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-18,BEL,PAN,3,0,group,fifa_worldcup_2018_schedule,true
+2018-06-18,SWE,KOR,1,0,group,fifa_worldcup_2018_schedule,true
+2018-06-18,TUN,ENG,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-19,COL,JPN,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-19,POLAND,SEN,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-19,RUSSIA,EGY,3,1,group,fifa_worldcup_2018_schedule,true
+2018-06-20,IRN,ESP,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-20,POR,MAR,1,0,group,fifa_worldcup_2018_schedule,true
+2018-06-20,URU,SAU,1,0,group,fifa_worldcup_2018_schedule,true
+2018-06-21,ARG,CRO,0,3,group,fifa_worldcup_2018_schedule,true
+2018-06-21,DENMARK,AUS,1,1,group,fifa_worldcup_2018_schedule,true
+2018-06-21,FRA,PERU,1,0,group,fifa_worldcup_2018_schedule,true
+2018-06-22,BRA,COSTARICA,2,0,group,fifa_worldcup_2018_schedule,true
+2018-06-22,NIGERIA,ICELAND,2,0,group,fifa_worldcup_2018_schedule,true
+2018-06-22,SERBIA,SUI,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-23,BEL,TUN,5,2,group,fifa_worldcup_2018_schedule,true
+2018-06-23,GER,SWE,2,1,group,fifa_worldcup_2018_schedule,true
+2018-06-23,KOR,MEX,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-24,ENG,PAN,6,1,group,fifa_worldcup_2018_schedule,true
+2018-06-24,JPN,SEN,2,2,group,fifa_worldcup_2018_schedule,true
+2018-06-24,POLAND,COL,0,3,group,fifa_worldcup_2018_schedule,true
+2018-06-25,ESP,MAR,2,2,group,fifa_worldcup_2018_schedule,true
+2018-06-25,IRN,POR,1,1,group,fifa_worldcup_2018_schedule,true
+2018-06-25,SAU,EGY,2,1,group,fifa_worldcup_2018_schedule,true
+2018-06-25,URU,RUSSIA,3,0,group,fifa_worldcup_2018_schedule,true
+2018-06-26,AUS,PERU,0,2,group,fifa_worldcup_2018_schedule,true
+2018-06-26,DENMARK,FRA,0,0,group,fifa_worldcup_2018_schedule,true
+2018-06-26,ICELAND,CRO,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-26,NIGERIA,ARG,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-27,KOR,GER,2,0,group,fifa_worldcup_2018_schedule,true
+2018-06-27,MEX,SWE,0,3,group,fifa_worldcup_2018_schedule,true
+2018-06-27,SERBIA,BRA,0,2,group,fifa_worldcup_2018_schedule,true
+2018-06-27,SUI,COSTARICA,2,2,group,fifa_worldcup_2018_schedule,true
+2018-06-28,ENG,BEL,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-28,JPN,POLAND,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-28,PAN,TUN,1,2,group,fifa_worldcup_2018_schedule,true
+2018-06-28,SEN,COL,0,1,group,fifa_worldcup_2018_schedule,true
+2018-06-30,FRA,ARG,4,3,round of 16,fifa_worldcup_2018_schedule,true
+2018-06-30,URU,POR,2,1,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-01,CRO,DENMARK,1,1,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-01,ESP,RUSSIA,1,1,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-02,BEL,JPN,3,2,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-02,BRA,MEX,2,0,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-03,COL,ENG,1,1,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-03,SWE,SUI,1,0,round of 16,fifa_worldcup_2018_schedule,true
+2018-07-06,BRA,BEL,1,2,quarter finals,fifa_worldcup_2018_schedule,true
+2018-07-06,URU,FRA,0,2,quarter finals,fifa_worldcup_2018_schedule,true
+2018-07-07,RUSSIA,CRO,2,2,quarter finals,fifa_worldcup_2018_schedule,true
+2018-07-07,SWE,ENG,0,2,quarter finals,fifa_worldcup_2018_schedule,true
+2018-07-10,FRA,BEL,1,0,semi finals,fifa_worldcup_2018_schedule,true
+2018-07-11,ENG,CRO,1,2,semi finals,fifa_worldcup_2018_schedule,true
+2018-07-14,BEL,ENG,2,0,finals,fifa_worldcup_2018_schedule,true
+2018-07-15,FRA,CRO,4,2,finals,fifa_worldcup_2018_schedule,true
+2022-11-20,QAT,ECU,0,2,group,fifa_worldcup_2022_schedule,true
+2022-11-21,ENG,IRN,6,2,group,fifa_worldcup_2022_schedule,true
+2022-11-21,SEN,NED,0,2,group,fifa_worldcup_2022_schedule,true
+2022-11-21,USA,WALES,1,1,group,fifa_worldcup_2022_schedule,true
+2022-11-22,ARG,SAU,1,2,group,fifa_worldcup_2022_schedule,true
+2022-11-22,DENMARK,TUN,0,0,group,fifa_worldcup_2022_schedule,true
+2022-11-22,FRA,AUS,4,1,group,fifa_worldcup_2022_schedule,true
+2022-11-22,MEX,POLAND,0,0,group,fifa_worldcup_2022_schedule,true
+2022-11-23,BEL,CAN,1,0,group,fifa_worldcup_2022_schedule,true
+2022-11-23,ESP,COSTARICA,7,0,group,fifa_worldcup_2022_schedule,true
+2022-11-23,GER,JPN,1,2,group,fifa_worldcup_2022_schedule,true
+2022-11-23,MAR,CRO,0,0,group,fifa_worldcup_2022_schedule,true
+2022-11-24,BRA,SERBIA,2,0,group,fifa_worldcup_2022_schedule,true
+2022-11-24,POR,GHA,3,2,group,fifa_worldcup_2022_schedule,true
+2022-11-24,SUI,CAMEROON,1,0,group,fifa_worldcup_2022_schedule,true
+2022-11-24,URU,KOR,0,0,group,fifa_worldcup_2022_schedule,true
+2022-11-25,ENG,USA,0,0,group,fifa_worldcup_2022_schedule,true
+2022-11-25,NED,ECU,1,1,group,fifa_worldcup_2022_schedule,true
+2022-11-25,QAT,SEN,1,3,group,fifa_worldcup_2022_schedule,true
+2022-11-25,WALES,IRN,0,2,group,fifa_worldcup_2022_schedule,true
+2022-11-26,ARG,MEX,2,0,group,fifa_worldcup_2022_schedule,true
+2022-11-26,FRA,DENMARK,2,1,group,fifa_worldcup_2022_schedule,true
+2022-11-26,POLAND,SAU,2,0,group,fifa_worldcup_2022_schedule,true
+2022-11-26,TUN,AUS,0,1,group,fifa_worldcup_2022_schedule,true
+2022-11-27,BEL,MAR,0,2,group,fifa_worldcup_2022_schedule,true
+2022-11-27,CRO,CAN,4,1,group,fifa_worldcup_2022_schedule,true
+2022-11-27,ESP,GER,1,1,group,fifa_worldcup_2022_schedule,true
+2022-11-27,JPN,COSTARICA,0,1,group,fifa_worldcup_2022_schedule,true
+2022-11-28,BRA,SUI,1,0,group,fifa_worldcup_2022_schedule,true
+2022-11-28,CAMEROON,SERBIA,3,3,group,fifa_worldcup_2022_schedule,true
+2022-11-28,KOR,GHA,2,3,group,fifa_worldcup_2022_schedule,true
+2022-11-28,POR,URU,2,0,group,fifa_worldcup_2022_schedule,true
+2022-11-29,ECU,SEN,1,2,group,fifa_worldcup_2022_schedule,true
+2022-11-29,IRN,USA,0,1,group,fifa_worldcup_2022_schedule,true
+2022-11-29,NED,QAT,2,0,group,fifa_worldcup_2022_schedule,true
+2022-11-29,WALES,ENG,0,3,group,fifa_worldcup_2022_schedule,true
+2022-11-30,AUS,DENMARK,1,0,group,fifa_worldcup_2022_schedule,true
+2022-11-30,POLAND,ARG,0,2,group,fifa_worldcup_2022_schedule,true
+2022-11-30,SAU,MEX,1,2,group,fifa_worldcup_2022_schedule,true
+2022-11-30,TUN,FRA,1,0,group,fifa_worldcup_2022_schedule,true
+2022-12-01,CAN,MAR,1,2,group,fifa_worldcup_2022_schedule,true
+2022-12-01,COSTARICA,GER,2,4,group,fifa_worldcup_2022_schedule,true
+2022-12-01,CRO,BEL,0,0,group,fifa_worldcup_2022_schedule,true
+2022-12-01,JPN,ESP,2,1,group,fifa_worldcup_2022_schedule,true
+2022-12-02,CAMEROON,BRA,1,0,group,fifa_worldcup_2022_schedule,true
+2022-12-02,GHA,URU,0,2,group,fifa_worldcup_2022_schedule,true
+2022-12-02,KOR,POR,2,1,group,fifa_worldcup_2022_schedule,true
+2022-12-02,SERBIA,SUI,2,3,group,fifa_worldcup_2022_schedule,true
+2022-12-03,ARG,AUS,2,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-03,NED,USA,3,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-04,ENG,SEN,3,0,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-04,FRA,POLAND,3,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-05,BRA,KOR,4,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-05,JPN,CRO,1,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-06,MAR,ESP,0,0,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-06,POR,SUI,6,1,round of 16,fifa_worldcup_2022_schedule,true
+2022-12-09,CRO,BRA,1,1,quarter finals,fifa_worldcup_2022_schedule,true
+2022-12-09,NED,ARG,2,2,quarter finals,fifa_worldcup_2022_schedule,true
+2022-12-10,ENG,FRA,1,2,quarter finals,fifa_worldcup_2022_schedule,true
+2022-12-10,MAR,POR,1,0,quarter finals,fifa_worldcup_2022_schedule,true
+2022-12-13,ARG,CRO,3,0,semi finals,fifa_worldcup_2022_schedule,true
+2022-12-14,FRA,MAR,2,0,semi finals,fifa_worldcup_2022_schedule,true
+2022-12-17,CRO,MAR,2,1,finals,fifa_worldcup_2022_schedule,true
+2022-12-18,ARG,FRA,3,3,finals,fifa_worldcup_2022_schedule,true

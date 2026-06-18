@@ -148,6 +148,7 @@ def retune(
         "k_factor": (1.0, 120.0),
         "beta": (0.05, 5.0),
         "mu": (0.5, 3.0),
+        "dc_rho": (-0.4, 0.0),
     }
     lo = np.array([bounds[f][0] for f in TUNABLE_FIELDS])
     hi = np.array([bounds[f][1] for f in TUNABLE_FIELDS])

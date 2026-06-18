@@ -15,8 +15,12 @@ from pathlib import Path
 from typing import Dict
 
 
-# Hyperparameters that ``retune`` is allowed to optimise.
-TUNABLE_FIELDS = ("home_advantage", "k_factor", "beta", "mu")
+# Hyperparameters that ``retune`` is allowed to optimise. Deliberately limited to
+# the goal-distribution shape, which match data genuinely informs. home_advantage
+# is excluded (tournament data is mostly neutral, so there's no signal) and
+# k_factor is excluded (minimising in-sample loss just rewards not adapting, which
+# would defeat the online learning) -- both are design choices kept at sane defaults.
+TUNABLE_FIELDS = ("beta", "mu", "dc_rho")
 
 
 @dataclass

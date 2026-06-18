@@ -225,7 +225,8 @@ def cmd_retune(args, paths: Paths) -> int:
     if result.success:
         result.params.save(paths.params_json)
         print("  improved -> wrote new params:")
-        for f in ("home_advantage", "k_factor", "beta", "mu"):
+        from .config import TUNABLE_FIELDS
+        for f in TUNABLE_FIELDS:
             print(f"    {f:<16}{getattr(params, f):.3f} -> {getattr(result.params, f):.3f}")
     else:
         print("  no improvement found; params unchanged.")
@@ -274,6 +275,29 @@ def cmd_import_results(args, paths: Paths) -> int:
     print(f"  date range: {records[0].date} .. {last.date}")
     print(f"  latest: {last.home_team_id} {last.home_goals}-{last.away_goals} {last.away_team_id}")
     print("\nNext: 'wcpredict replay' to validate, or 'wcpredict simulate' to predict.")
+    return 0
+
+
+def cmd_import_historical(args, paths: Paths) -> int:
+    """Import past tournaments (FIFA-format CSVs) into historical_matches.csv for retuning."""
+    teams = _load_teams(paths)
+    all_records: List[MatchRecord] = []
+    for f in args.file:
+        src = Path(f)
+        if not src.exists():
+            sys.exit(f"error: file not found: {src}")
+        recs = read_official_schedule(
+            src, teams,
+            allow_unknown=True,      # keep teams not in the 2026 field
+            host_ids=set(),          # historical hosts differ; treat WC games as neutral
+            competition=src.stem,
+        )
+        print(f"  {src.name}: {len(recs)} matches")
+        all_records.extend(recs)
+    all_records.sort(key=lambda m: (m.date, m.home_team_id))
+    write_results(paths.historical_csv, all_records)
+    print(f"Wrote {len(all_records)} historical matches -> {paths.historical_csv}")
+    print("\nNext: 'wcpredict retune' to optimise weights on this data.")
     return 0
 
 
@@ -431,6 +455,10 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("import-results", help="import played matches from the official FIFA schedule CSV")
     s.add_argument("--file", required=True, help="path to the official schedule CSV")
     s.set_defaults(func=cmd_import_results)
+
+    s = sub.add_parser("import-historical", help="import past tournaments for retuning")
+    s.add_argument("--file", required=True, nargs="+", help="one or more FIFA-format schedule CSVs")
+    s.set_defaults(func=cmd_import_historical)
 
     s = sub.add_parser("replay", help="replay already-played matches to validate the model")
     s.add_argument("--source", default=None, help="results CSV to replay (default: data/results.csv)")

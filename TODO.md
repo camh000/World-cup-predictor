@@ -13,12 +13,16 @@ only changes *after* it plays. When matchday 2 (and 3) are in:
    (`src/wcpredictor/config.py`) + the optimiser in `learn.py::retune`, then `retune`.
 4. If it doesn't help, set `form_alpha = 0`.
 
-## 2. Re-tune `dc_rho` once more results exist
+## 2. Revisit `dc_rho` / goal-model weights as more data arrives
 
-Dixon–Coles `dc_rho` defaults to the literature value −0.13. A sweep on the
-draw-heavy matchday 1 preferred a much larger magnitude (overfitting one round).
-Once more matchdays / historical data are loaded, tune it via `retune`
-(it is in `TUNABLE_FIELDS`) rather than by hand, and re-check it isn't overfit.
+Findings so far: a sweep on the draw-heavy 2026 matchday 1 wanted a large negative
+`dc_rho`, but `retune` on the last two full World Cups (128 matches) drives it to
+~0 (WC draws fit independent Poisson well) and sets `beta`≈0.5, `mu`≈1.17. The
+committed cold-start defaults keep the literature prior (`dc_rho`=−0.13, `beta`=1,
+`mu`=1.35); `retune` writes specialised values to `state/params.json`. As 2026
+results accumulate, re-run `retune` and decide whether to fold the tuned goal-model
+values into the `config.py` defaults. More historical tournaments (Euros, Copa,
+qualifiers) would sharpen the tuning — only WC2018/WC2022 are loaded today.
 
 ## 3. Build the real knockout bracket from the official schedule
 

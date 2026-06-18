@@ -57,7 +57,8 @@ wcpredict update-result --home BRA --away ARG --score 3-0 --stage group
 wcpredict simulate --sims 20000 --seed 42         # BRA's odds have now shifted
 wcpredict accuracy                                # how good have predictions been?
 wcpredict replay                                  # validate model on already-played games
-wcpredict retune --metric logloss                 # optimise hyperparameters
+wcpredict import-historical --file wc2018.csv wc2022.csv  # past tournaments for tuning
+wcpredict retune --metric logloss                 # tune goal-model weights on real data
 wcpredict ratings --top 20                         # current Elo table
 wcpredict standings --group C                       # group view
 wcpredict fetch-results --since 2026-06-11          # optional, needs API key
@@ -119,8 +120,12 @@ fully offline — just record results with `update-result`.
 - `data/results.csv` — real results the engine learns from, generated from the
   official FIFA schedule (`data/fifa_worldcup_2026_schedule.csv`) via
   `wcpredict import-results`. Re-run it as each matchday is played.
-- `data/historical_matches.csv` — optional past matches used by `retune`
-  (illustrative sample; extend with a larger dataset for better tuning).
+- `data/historical_matches.csv` — past matches used by `retune`, generated from
+  past tournaments (`data/fifa_worldcup_2018_schedule.csv`,
+  `data/fifa_worldcup_2022_schedule.csv`) via `wcpredict import-historical`.
+  `retune` tunes only the goal-shape params (`beta`, `mu`, `dc_rho`); home
+  advantage and the Elo K-factor are deliberately left fixed (tournament data is
+  neutral, and minimising in-sample loss would just switch off the learning).
 
 ## Project layout
 
