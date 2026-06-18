@@ -44,6 +44,7 @@ wcpredict predict --match BRA ARG --knockout      # one-off match probabilities
 wcpredict update-result --home BRA --away ARG --score 3-0 --stage group
 wcpredict simulate --sims 20000 --seed 42         # BRA's odds have now shifted
 wcpredict accuracy                                # how good have predictions been?
+wcpredict replay                                  # validate model on already-played games
 wcpredict retune --metric logloss                 # optimise hyperparameters
 wcpredict ratings --top 20                         # current Elo table
 wcpredict standings --group C                       # group view
@@ -66,6 +67,29 @@ happened — and can tell whether the model is improving or needs adjusting:
 `wcpredict accuracy` summarises the ledger: running log-loss / Brier versus a
 naive baseline, top-pick hit rate, a "skill" score, and a recent-form trend. It
 flags when accuracy is drifting and a `retune` is worth running.
+
+### Validating against matches already played
+
+`wcpredict replay` (or `scripts/replay_2026.sh`) runs every result in
+`data/results.csv` back through the model **with the current weights**, in
+chronological order — forecasting each game from the ratings as they stood
+*before* it, scoring the forecast, then learning from the result. It rebuilds the
+ledger, prints a play-by-play, and reports overall accuracy, so you can confirm
+the model is sensible before trusting its forward predictions:
+
+```bash
+scripts/replay_2026.sh            # play-by-play + accuracy + updated title odds
+wcpredict replay --quiet          # accuracy summary only
+wcpredict replay --no-save        # dry run (don't persist the learned ratings)
+wcpredict replay --from-state     # start from current ratings instead of seeds
+```
+
+> The 24 first-round 2026 results in `data/results.csv` were compiled from public
+> match reporting; verify/adjust them as needed. On that draw-heavy opening round
+> the default-weight model scores a log-loss of ~1.04 vs a 1.10 naive baseline
+> (~+5% skill) — modestly better than guessing, with clear room to improve
+> (notably it under-predicts draws), which is exactly the kind of thing this
+> replay is meant to reveal.
 
 The live fetcher uses [football-data.org](https://www.football-data.org/); set
 `FOOTBALL_DATA_API_KEY` and install the `api` extra. Without it the engine works

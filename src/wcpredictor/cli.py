@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -255,6 +256,73 @@ def cmd_ratings(args, paths: Paths) -> int:
     return 0
 
 
+def cmd_replay(args, paths: Paths) -> int:
+    """Replay already-played matches through the model with the current weights.
+
+    Walk-forward validation: each match is forecast using the ratings as they
+    stood *before* it, the forecast is scored, then the model learns from the
+    result and moves on. Rebuilds the prediction ledger and ratings history from
+    scratch so the run is fully reproducible.
+    """
+    from .learn import _chronological
+
+    teams = _load_teams(paths)
+    params = _load_params(paths)
+
+    if args.from_state and paths.ratings_json.exists():
+        ratings = RatingStore.load(paths.ratings_json)
+        start = "current saved ratings"
+    else:
+        ratings = RatingStore.seed(teams, read_seed_ratings(paths.seed_ratings_csv))
+        start = "seed ratings"
+
+    source = Path(args.source) if args.source else paths.results_csv
+    matches = _chronological(read_matches(source))
+    if not matches:
+        sys.exit(f"error: no matches to replay in {source}")
+
+    # Fresh ledgers — a replay regenerates the full history deterministically.
+    for p in (paths.predictions_csv, paths.ratings_history_csv):
+        if p.exists():
+            p.unlink()
+
+    print(f"Replaying {len(matches)} match(es) from {source}")
+    print(f"Starting from {start} with current weights "
+          f"(k={params.k_factor:.1f}, home_adv={params.home_advantage:.0f}, "
+          f"beta={params.beta:.2f}, mu={params.mu:.2f})\n")
+
+    for seq, m in enumerate(matches, start=1):
+        ratings_pre = ratings.copy()
+        deltas = apply_result(ratings, params, m)
+        pred = build_record(seq, ratings_pre, ratings, params, m, deltas)
+        append_prediction(paths.predictions_csv, pred)
+        append_ratings_snapshot(paths.ratings_history_csv, seq, m, ratings)
+        if not args.quiet:
+            mark = "OK " if pred.predicted_outcome == pred.actual_outcome else "miss"
+            print(f"  #{seq:<3} {m.home_team_id} {m.home_goals}-{m.away_goals} {m.away_team_id:<4}"
+                  f"  pred {pred.p_home * 100:>4.0f}/{pred.p_draw * 100:>3.0f}/{pred.p_away * 100:>4.0f}"
+                  f"  ->{pred.predicted_outcome:<5} actual {pred.actual_outcome:<5}[{mark}]"
+                  f"  ll={pred.log_loss:.3f}")
+
+    if args.save:
+        paths.ensure_state_dir()
+        ratings.save(paths.ratings_json)
+
+    summary = summarize(read_predictions(paths.predictions_csv), recent=args.recent)
+    print(f"\nAccuracy over {summary.n} played match(es):")
+    print(f"  log-loss:       {summary.log_loss:.4f}   (baseline guess {summary.baseline_log_loss:.4f})")
+    print(f"  Brier score:    {summary.brier:.4f}")
+    print(f"  top-pick hit:   {summary.hit_rate * 100:.1f}%")
+    print(f"  skill vs guess: {summary.skill * 100:+.1f}%")
+    if summary.skill < 0:
+        print("  ! Below baseline — try 'wcpredict retune' or revisit seed ratings.")
+    if args.save:
+        print(f"\nSaved updated ratings -> {paths.ratings_json}")
+    else:
+        print("\n(ratings not saved; pass --save to persist, or this was a dry run)")
+    return 0
+
+
 def cmd_accuracy(args, paths: Paths) -> int:
     rows = read_predictions(paths.predictions_csv)
     summary = summarize(rows, recent=args.recent)
@@ -336,6 +404,16 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("ratings", help="show the current Elo table")
     s.add_argument("--top", type=int, default=20)
     s.set_defaults(func=cmd_ratings)
+
+    s = sub.add_parser("replay", help="replay already-played matches to validate the model")
+    s.add_argument("--source", default=None, help="results CSV to replay (default: data/results.csv)")
+    s.add_argument("--from-state", action="store_true",
+                   help="start from current saved ratings instead of seed ratings")
+    s.add_argument("--no-save", dest="save", action="store_false", default=True,
+                   help="don't persist the resulting ratings (dry run)")
+    s.add_argument("--quiet", action="store_true", help="suppress the play-by-play lines")
+    s.add_argument("--recent", type=int, default=10)
+    s.set_defaults(func=cmd_replay)
 
     s = sub.add_parser("accuracy", help="review prediction accuracy over recorded results")
     s.add_argument("--recent", type=int, default=10, help="window for the recent-trend score")
