@@ -55,9 +55,13 @@ fully offline — just record results with `update-result`.
 
 ## Data
 
-- `data/teams.csv` — 48 teams, their confederation and group. **The group draw and
-  the Elo seeds in `data/seed_ratings.csv` are illustrative and editable** — drop
-  in the official draw and ratings when finalised.
+- `data/teams.csv` — the **real 48 teams and official group draw** for the 2026
+  World Cup (drawn 5 Dec 2025; hosts Mexico/Canada/USA in A1/B1/D1).
+- `data/seed_ratings.csv` — seed strengths on the **eloratings.net scale**
+  (June 2026). Top contenders use the exact published values (Spain 2129,
+  Argentina 2115, France 2063, England 2024, Portugal 1989, Brazil 1978); the
+  remaining teams are close approximations. The engine refines all of them from
+  real results, so exact starting values matter less over time.
 - `data/results.csv` — append-only log of real results the engine learns from.
 - `data/historical_matches.csv` — optional past matches used by `retune`
   (illustrative sample; extend with a larger dataset for better tuning).

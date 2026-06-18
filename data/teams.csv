@@ -1,49 +1,49 @@
 team_id,name,confederation,group,host
 MEX,Mexico,CONCACAF,A,true
-ITA,Italy,UEFA,A,false
-ECU,Ecuador,CONMEBOL,A,false
-CRC,Costa Rica,CONCACAF,A,false
+KOR,South Korea,AFC,A,false
+RSA,South Africa,CAF,A,false
+CZE,Czechia,UEFA,A,false
 CAN,Canada,CONCACAF,B,true
-CRO,Croatia,UEFA,B,false
-AUT,Austria,UEFA,B,false
-PAN,Panama,CONCACAF,B,false
-ARG,Argentina,CONMEBOL,C,false
-URU,Uruguay,CONMEBOL,C,false
-NGA,Nigeria,CAF,C,false
-JAM,Jamaica,CONCACAF,C,false
+QAT,Qatar,AFC,B,false
+SUI,Switzerland,UEFA,B,false
+BIH,Bosnia and Herzegovina,UEFA,B,false
+BRA,Brazil,CONMEBOL,C,false
+MAR,Morocco,CAF,C,false
+HAI,Haiti,CONCACAF,C,false
+SCO,Scotland,UEFA,C,false
 USA,United States,CONCACAF,D,true
-COL,Colombia,CONMEBOL,D,false
-EGY,Egypt,CAF,D,false
-CMR,Cameroon,CAF,D,false
-FRA,France,UEFA,E,false
-MAR,Morocco,CAF,E,false
-ALG,Algeria,CAF,E,false
-GHA,Ghana,CAF,E,false
-ESP,Spain,UEFA,F,false
-DEN,Denmark,UEFA,F,false
-NOR,Norway,UEFA,F,false
-CIV,Ivory Coast,CAF,F,false
-ENG,England,UEFA,G,false
-SUI,Switzerland,UEFA,G,false
-POL,Poland,UEFA,G,false
-SAU,Saudi Arabia,AFC,G,false
-BRA,Brazil,CONMEBOL,H,false
-JPN,Japan,AFC,H,false
-TUR,Turkey,UEFA,H,false
-QAT,Qatar,AFC,H,false
-POR,Portugal,UEFA,I,false
+AUS,Australia,AFC,D,false
+PAR,Paraguay,CONMEBOL,D,false
+TUR,Turkey,UEFA,D,false
+GER,Germany,UEFA,E,false
+CUW,Curacao,CONCACAF,E,false
+CIV,Ivory Coast,CAF,E,false
+ECU,Ecuador,CONMEBOL,E,false
+NED,Netherlands,UEFA,F,false
+JPN,Japan,AFC,F,false
+SWE,Sweden,UEFA,F,false
+TUN,Tunisia,CAF,F,false
+BEL,Belgium,UEFA,G,false
+EGY,Egypt,CAF,G,false
+IRN,Iran,AFC,G,false
+NZL,New Zealand,OFC,G,false
+ESP,Spain,UEFA,H,false
+CPV,Cape Verde,CAF,H,false
+SAU,Saudi Arabia,AFC,H,false
+URU,Uruguay,CONMEBOL,H,false
+FRA,France,UEFA,I,false
 SEN,Senegal,CAF,I,false
-AUS,Australia,AFC,I,false
-UAE,United Arab Emirates,AFC,I,false
-NED,Netherlands,UEFA,J,false
-SRB,Serbia,UEFA,J,false
-TUN,Tunisia,CAF,J,false
-NZL,New Zealand,OFC,J,false
-GER,Germany,UEFA,K,false
-IRN,Iran,AFC,K,false
-PAR,Paraguay,CONMEBOL,K,false
-SCO,Scotland,UEFA,K,false
-BEL,Belgium,UEFA,L,false
-KOR,South Korea,AFC,L,false
-UZB,Uzbekistan,AFC,L,false
-BOL,Bolivia,CONMEBOL,L,false
+IRQ,Iraq,AFC,I,false
+NOR,Norway,UEFA,I,false
+ARG,Argentina,CONMEBOL,J,false
+ALG,Algeria,CAF,J,false
+AUT,Austria,UEFA,J,false
+JOR,Jordan,AFC,J,false
+POR,Portugal,UEFA,K,false
+COD,DR Congo,CAF,K,false
+UZB,Uzbekistan,AFC,K,false
+COL,Colombia,CONMEBOL,K,false
+ENG,England,UEFA,L,false
+CRO,Croatia,UEFA,L,false
+GHA,Ghana,CAF,L,false
+PAN,Panama,CONCACAF,L,false
