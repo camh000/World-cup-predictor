@@ -66,10 +66,12 @@ def build_calendar(rows, reminder_min: int) -> str:
     return "\r\n".join(lines) + "\r\n"
 
 
-def load_rows(schedule: Path, start: datetime, end: datetime):
+def load_rows(schedule: Path, start: datetime, end: datetime, rounds=None):
     rows = []
     with schedule.open("r", encoding="utf-8", newline="") as fh:
         for r in csv.DictReader(fh):
+            if rounds and r.get("Round Number", "").strip() not in rounds:
+                continue
             try:
                 dt = datetime.strptime(r["Date"].strip(), MATCH_FMT)
             except (ValueError, KeyError):
@@ -89,6 +91,10 @@ def main() -> None:
     ap.add_argument("--from", dest="frm", default="2026-06-18T10:00",
                     help="window start, UTC (default 2026-06-18T10:00 = 11:00 BST)")
     ap.add_argument("--days", type=int, default=7, help="window length in days (default 7)")
+    ap.add_argument("--to", dest="to", default=None,
+                    help="explicit window end date (overrides --days), e.g. 2026-06-29")
+    ap.add_argument("--rounds", default=None,
+                    help="comma-separated Round Number filter, e.g. '1,2,3' for the group stage")
     ap.add_argument("--out", default="worldcup_next_week.ics", help="output .ics path")
     ap.add_argument("--reminder", type=int, default=30, help="reminder minutes before (0 = none)")
     ap.add_argument("--schedule", default=str(SCHEDULE), help="schedule CSV path")
@@ -96,8 +102,10 @@ def main() -> None:
 
     start = datetime.fromisoformat(args.frm)
     # Include all of the final calendar day so an evening kickoff isn't cut off.
-    end = datetime.combine((start + timedelta(days=args.days)).date(), datetime.max.time())
-    rows = load_rows(Path(args.schedule), start, end)
+    end_anchor = datetime.fromisoformat(args.to) if args.to else start + timedelta(days=args.days)
+    end = datetime.combine(end_anchor.date(), datetime.max.time())
+    rounds = {r.strip() for r in args.rounds.split(",")} if args.rounds else None
+    rows = load_rows(Path(args.schedule), start, end, rounds)
     if not rows:
         raise SystemExit(f"No fixtures between {start} and {end} in {args.schedule}")
 
