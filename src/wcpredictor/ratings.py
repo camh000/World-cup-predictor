@@ -35,6 +35,11 @@ class Rating:
     elo: float = DEFAULT_ELO
     attack: float = 0.0
     defense: float = 0.0
+    # Tournament "form": a fast, mean-reverting overlay on the slow Elo baseline.
+    # Starts at 1.0 each tournament and is nudged by how much a team over- or
+    # under-performs its Elo expectation in this tournament's games. Applied as a
+    # multiplier on expected goals. 1.0 == no effect.
+    form: float = 1.0
 
 
 class RatingStore:

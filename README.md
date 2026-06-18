@@ -23,6 +23,16 @@ advancing, reaching each round, and winning the trophy.
    accumulated results and optimises the model's hyperparameters (home advantage,
    learning rate, goal scaling) to minimise prediction error (log-loss / Brier).
 
+**Tournament form (a two-speed overlay).** International teams rarely play, so a
+seed Elo can be stale by kick-off. Alongside the slow Elo baseline, each team
+carries a **form** multiplier that starts at **1.0** each tournament and reacts
+*fast* to how much a team over- or under-performs its Elo expectation in this
+tournament's games. It mean-reverts toward 1.0 between games and is bounded
+(0.85–1.15). An in-form team is modelled to score more and concede less. Because
+form starts at 1.0 and only changes after a team plays, it has no effect on a
+team's first match and grows in influence over matchdays 2–3. Disable it for a
+pure-Elo run with `wcpredict replay --no-form` (or `form_alpha = 0`).
+
 Canonical inputs live in `data/` (committed); the evolving learned model lives in
 `state/` (git-ignored, rebuildable with `wcpredict reset`). A given
 `(state, seed)` pair is fully deterministic.

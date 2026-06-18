@@ -52,7 +52,29 @@ def apply_result(
         divisor=params.elo_divisor,
     )
     home.elo, away.elo = new_home, new_away
+
+    # Update tournament form from the "surprise" relative to the Elo expectation
+    # computed from the *pre-update* ratings. Each game first decays form back
+    # toward 1.0 (mean reversion), then nudges it by the surprise. Form is a fast
+    # overlay; Elo remains the slow baseline.
+    if params.form_alpha > 0:
+        e_home = 1.0 / (1.0 + 10.0 ** (-((before_home - before_away) + home_adv) / params.elo_divisor))
+        if record.home_goals > record.away_goals:
+            s_home = 1.0
+        elif record.home_goals < record.away_goals:
+            s_home = 0.0
+        else:
+            s_home = 0.5
+        surprise = s_home - e_home  # >0 = home over-performed, away under-performed
+        home.form = _clip_form(home.form, surprise, params)
+        away.form = _clip_form(away.form, -surprise, params)
+
     return new_home - before_home, new_away - before_away
+
+
+def _clip_form(form: float, surprise: float, params: Params) -> float:
+    updated = 1.0 + (form - 1.0) * params.form_decay + params.form_alpha * surprise
+    return max(params.form_min, min(params.form_max, updated))
 
 
 def _forecast(home: Rating, away: Rating, params: Params, neutral: bool) -> Tuple[float, float, float]:
@@ -62,6 +84,7 @@ def _forecast(home: Rating, away: Rating, params: Params, neutral: bool) -> Tupl
         d, params,
         attack_home=home.attack, defense_away=away.defense,
         attack_away=away.attack, defense_home=home.defense,
+        form_home=home.form, form_away=away.form,
     )
     return match_probabilities(lam_h, lam_a, params.max_goals)
 

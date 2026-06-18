@@ -249,10 +249,10 @@ def cmd_ratings(args, paths: Paths) -> int:
     teams = _load_teams(paths)
     ratings = _load_ratings(paths, teams)
     name_by_id = {t.team_id: t.name for t in teams}
-    print(f"\n{'#':<4}{'Team':<24}{'Elo':>7}")
-    print("-" * 35)
+    print(f"\n{'#':<4}{'Team':<24}{'Elo':>7}{'Form':>8}")
+    print("-" * 43)
     for i, (tid, r) in enumerate(ratings.ranked()[: args.top], start=1):
-        print(f"{i:<4}{name_by_id.get(tid, tid):<24}{r.elo:>7.0f}")
+        print(f"{i:<4}{name_by_id.get(tid, tid):<24}{r.elo:>7.0f}{r.form:>8.2f}")
     return 0
 
 
@@ -268,6 +268,8 @@ def cmd_replay(args, paths: Paths) -> int:
 
     teams = _load_teams(paths)
     params = _load_params(paths)
+    if not args.form:
+        params = params.copy_with(form_alpha=0.0)
 
     if args.from_state and paths.ratings_json.exists():
         ratings = RatingStore.load(paths.ratings_json)
@@ -412,6 +414,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-save", dest="save", action="store_false", default=True,
                    help="don't persist the resulting ratings (dry run)")
     s.add_argument("--quiet", action="store_true", help="suppress the play-by-play lines")
+    s.add_argument("--no-form", dest="form", action="store_false", default=True,
+                   help="disable the tournament-form overlay (Elo only)")
     s.add_argument("--recent", type=int, default=10)
     s.set_defaults(func=cmd_replay)
 

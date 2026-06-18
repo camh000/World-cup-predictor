@@ -22,16 +22,23 @@ def expected_goals(
     defense_away: float = 0.0,
     attack_away: float = 0.0,
     defense_home: float = 0.0,
+    form_home: float = 1.0,
+    form_away: float = 1.0,
 ) -> Tuple[float, float]:
     """Expected goals ``(lambda_home, lambda_away)`` from an Elo difference.
 
     ``elo_diff`` should already include any home advantage. The optional
     per-team attack/defense offsets are log-scale adjustments that default to 0,
     so the model degrades gracefully to a pure-Elo goal model.
+
+    ``form_home``/``form_away`` are the teams' tournament-form multipliers (1.0 =
+    neutral): a team scores in proportion to its own form and concedes in inverse
+    proportion to its opponent's form, so an in-form team both scores more and
+    concedes less. The ratio is 1.0 when both teams are at neutral form.
     """
     base = params.beta * elo_diff / params.elo_divisor
-    lam_home = params.mu * math.exp(base + attack_home - defense_away)
-    lam_away = params.mu * math.exp(-base + attack_away - defense_home)
+    lam_home = params.mu * math.exp(base + attack_home - defense_away) * (form_home / form_away)
+    lam_away = params.mu * math.exp(-base + attack_away - defense_home) * (form_away / form_home)
     return lam_home, lam_away
 
 

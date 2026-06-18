@@ -80,6 +80,7 @@ def forecast(ratings: RatingStore, params: Params, home: str, away: str, neutral
         d, params,
         attack_home=rh.attack, defense_away=ra.defense,
         attack_away=ra.attack, defense_home=rh.defense,
+        form_home=rh.form, form_away=ra.form,
     )
     return match_probabilities(lam_h, lam_a, params.max_goals), (lam_h, lam_a)
 

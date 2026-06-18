@@ -55,6 +55,13 @@ class Params:
     max_goals: int = 10
     points_win: int = 3
     points_draw: int = 1
+    # Tournament form overlay (see Rating.form). form_alpha is the learning rate
+    # per game (0 disables form entirely); form_decay pulls form back toward 1.0
+    # between games (mean reversion); form_min/max bound the multiplier.
+    form_alpha: float = 0.10
+    form_decay: float = 0.85
+    form_min: float = 0.85
+    form_max: float = 1.15
 
     def to_dict(self) -> Dict[str, float]:
         return asdict(self)

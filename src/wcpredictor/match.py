@@ -57,6 +57,7 @@ def simulate_match(
         d, params,
         attack_home=rh.attack, defense_away=ra.defense,
         attack_away=ra.attack, defense_home=rh.defense,
+        form_home=rh.form, form_away=ra.form,
     )
 
     hg = int(rng.poisson(lam_h))
