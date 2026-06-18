@@ -27,6 +27,30 @@ def _ics_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
 
 
+def _fold(line: str) -> str:
+    """Fold a content line to <=75 octets per RFC 5545.
+
+    Continuation lines begin with a single space. Folds on character (codepoint)
+    boundaries so multi-byte UTF-8 (e.g. the emoji, accents) is never split.
+    Apple Calendar is strict about this; an over-length line can make it drop
+    properties such as DTEND from nearby events.
+    """
+    if len(line.encode("utf-8")) <= 75:
+        return line
+    chunks, cur, cur_octets, first = [], "", 0, True
+    for ch in line:
+        clen = len(ch.encode("utf-8"))
+        limit = 75 if first else 74  # continuation lines carry a leading space
+        if cur_octets + clen > limit:
+            chunks.append(cur)
+            cur, cur_octets, first = ch, clen, False
+        else:
+            cur += ch
+            cur_octets += clen
+    chunks.append(cur)
+    return "\r\n ".join(chunks)
+
+
 def build_calendar(rows, reminder_min: int) -> str:
     stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     lines = [
@@ -62,8 +86,8 @@ def build_calendar(rows, reminder_min: int) -> str:
             ]
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
-    # RFC 5545 requires CRLF line endings.
-    return "\r\n".join(lines) + "\r\n"
+    # RFC 5545 requires CRLF line endings and lines folded to <=75 octets.
+    return "\r\n".join(_fold(l) for l in lines) + "\r\n"
 
 
 def load_rows(schedule: Path, start: datetime, end: datetime, rounds=None):
