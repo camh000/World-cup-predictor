@@ -2,11 +2,39 @@ import numpy as np
 
 from wcpredictor.tournament import (
     N_BEST_THIRDS,
+    R32_2026,
     R32_TEMPLATE,
     TeamStanding,
+    _assign_thirds,
     best_third_placed,
     simulate_tournament,
 )
+
+
+def test_r32_2026_consumes_all_slots():
+    winners, runners, thirds = set(), set(), 0
+    for a, b in R32_2026:
+        for kind, key in (a, b):
+            if kind == "W":
+                winners.add(key)
+            elif kind == "RU":
+                runners.add(key)
+            else:
+                thirds += 1
+    assert len(R32_2026) == 16
+    assert winners == set("ABCDEFGHIJKL")   # all 12 group winners
+    assert runners == set("ABCDEFGHIJKL")   # all 12 runners-up
+    assert thirds == N_BEST_THIRDS          # 8 third-placed slots
+
+
+def test_third_assignment_respects_allowed_groups():
+    slots = [frozenset("ABCDF"), frozenset("CDFGH"), frozenset("CEFHI")]
+    third_groups = ["A", "G", "E"]          # exactly one valid slot each
+    assign = _assign_thirds(slots, third_groups)
+    assert assign[0] == 0   # only A-slot can take group A
+    assert third_groups[assign[1]] == "G"   # G only allowed by slot 1
+    assert third_groups[assign[2]] == "E"
+    assert sorted(assign) == [0, 1, 2]      # a perfect matching
 
 
 def test_r32_template_consumes_all_slots():

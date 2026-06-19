@@ -51,6 +51,59 @@ R32_TEMPLATE: List[Tuple[Tuple, Tuple]] = [
 N_BEST_THIRDS = 8
 
 
+# Official 2026 Round-of-32 bracket, in match-number order (matches 73-88 of the
+# FIFA schedule). Codes: 1X = winner of group X, 2X = runner-up X, 3XXXX = a best
+# third-placed team from one of the listed groups (FIFA's allocation table). The
+# match-number order also defines the knockout tree: adjacent pairs meet in the
+# Round of 16, and so on.
+_R32_2026_CODES = [
+    ("2A", "2B"), ("1E", "3ABCDF"), ("1F", "2C"), ("1C", "2F"),
+    ("1I", "3CDFGH"), ("2E", "2I"), ("1A", "3CEFHI"), ("1L", "3EHIJK"),
+    ("1D", "3BEFIJ"), ("1G", "3AEHIJ"), ("2K", "2L"), ("1H", "2J"),
+    ("1B", "3EFGIJ"), ("1J", "2H"), ("1K", "3DEIJL"), ("2D", "2G"),
+]
+
+
+def _parse_slot_code(code: str):
+    head, rest = code[0], code[1:]
+    if head == "1":
+        return ("W", rest)
+    if head == "2":
+        return ("RU", rest)
+    if head == "3":
+        return ("3", frozenset(rest))
+    raise ValueError(f"bad slot code: {code!r}")
+
+
+R32_2026 = [(_parse_slot_code(a), _parse_slot_code(b)) for a, b in _R32_2026_CODES]
+
+
+def _assign_thirds(slot_allowed: List[frozenset], third_groups: List[str]) -> List[int]:
+    """Match each third-placed slot to a qualifying third from an allowed group.
+
+    Bipartite maximum matching (Kuhn's algorithm): a slot like ``3ABCDF`` can only
+    take a third that finished 3rd in group A, B, C, D or F. Returns, per slot, the
+    index into ``third_groups`` (or -1 if unmatched, handled by the caller).
+    """
+    match_slot = [-1] * len(slot_allowed)
+    match_third = [-1] * len(third_groups)
+
+    def augment(s: int, seen: List[bool]) -> bool:
+        for t, g in enumerate(third_groups):
+            if g in slot_allowed[s] and not seen[t]:
+                seen[t] = True
+                if match_third[t] == -1 or augment(match_third[t], seen):
+                    match_slot[s] = t
+                    match_third[t] = s
+                    return True
+        return False
+
+    for s in range(len(slot_allowed)):
+        augment(s, [False] * len(third_groups))
+    return match_slot
+
+
+
 @dataclass
 class TeamStanding:
     team_id: str
@@ -59,6 +112,7 @@ class TeamStanding:
     gf: int = 0
     ga: int = 0
     elo: float = 0.0  # deterministic final tie-breaker
+    group: str = ""
 
     @property
     def gd(self) -> int:
@@ -138,20 +192,46 @@ def _resolve_slot(slot: Tuple, winners, runners, thirds_ranked) -> str:
     raise ValueError(f"unknown slot kind: {kind!r}")
 
 
+def _build_r32(r32_slots, winners, runners, thirds_by_group):
+    """Resolve a bracket spec into 16 concrete (home, away) Round-of-32 matchups."""
+    ranked = best_third_placed(list(thirds_by_group.values()), N_BEST_THIRDS)
+    third_ids = [s.team_id for s in ranked]
+    third_groups = [s.group for s in ranked]
+
+    # Constraint-match the 8 qualifying thirds to the 8 "3XXXX" slots, in order.
+    slot_allowed = [s[1] for a, b in r32_slots for s in (a, b) if s[0] == "3"]
+    assignment = _assign_thirds(slot_allowed, third_groups)
+    used = {t for t in assignment if t != -1}
+    leftover = iter([third_ids[i] for i in range(len(third_ids)) if i not in used])
+    third_queue = iter([third_ids[a] if a != -1 else next(leftover) for a in assignment])
+
+    def resolve(slot):
+        kind, key = slot
+        if kind == "W":
+            return winners[key]
+        if kind == "RU":
+            return runners[key]
+        return next(third_queue)  # "3" slot, consumed in spec order
+
+    return [(resolve(a), resolve(b)) for a, b in r32_slots]
+
+
 def simulate_tournament(
     teams: List[Team],
     params: Params,
     ratings: RatingStore,
     rng: np.random.Generator,
+    r32_slots=R32_2026,
 ) -> TournamentResult:
     """Simulate one full tournament and return the champion + furthest stage
-    reached by every team."""
+    reached by every team. ``r32_slots`` is the Round-of-32 bracket spec
+    (defaults to the official 2026 mapping)."""
     groups = teams_by_group(teams)
     reached: Dict[str, str] = {t.team_id: "group" for t in teams}
 
     winners: Dict[str, str] = {}
     runners: Dict[str, str] = {}
-    thirds: List[TeamStanding] = []
+    thirds_by_group: Dict[str, TeamStanding] = {}
     group_winner_map: Dict[str, str] = {}
 
     for g, gteams in groups.items():
@@ -160,22 +240,16 @@ def simulate_tournament(
         runners[g] = table[1].team_id
         group_winner_map[g] = table[0].team_id
         if len(table) >= 3:
-            thirds.append(table[2])
+            third = table[2]
+            third.group = g
+            thirds_by_group[g] = third
 
-    qualifying_thirds = best_third_placed(thirds, N_BEST_THIRDS)
-    thirds_ranked = [s.team_id for s in qualifying_thirds]
+    current = _build_r32(r32_slots, winners, runners, thirds_by_group)
 
     # Everyone in the knockout has reached at least "R32".
-    knockout_ids = list(winners.values()) + list(runners.values()) + thirds_ranked
-    for tid in knockout_ids:
-        _record(reached, tid, "R32")
-
-    # Resolve the Round of 32 from the template.
-    current = [
-        (_resolve_slot(a, winners, runners, thirds_ranked),
-         _resolve_slot(b, winners, runners, thirds_ranked))
-        for a, b in R32_TEMPLATE
-    ]
+    for home, away in current:
+        _record(reached, home, "R32")
+        _record(reached, away, "R32")
 
     champion: Optional[str] = None
     for round_name, n_matches in KNOCKOUT_ROUNDS:
