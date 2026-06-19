@@ -370,6 +370,30 @@ def cmd_replay(args, paths: Paths) -> int:
     return 0
 
 
+def cmd_qualify(args, paths: Paths) -> int:
+    """Show each team's chance of advancing, conditioned on results so far."""
+    from .scenarios import qualification
+
+    teams = _load_teams(paths)
+    params = _load_params(paths)
+    ratings = _load_ratings(paths, teams)
+    matches = [m for m in read_matches(paths.results_csv) if m.stage == "group"]
+    base, adv, win = qualification(teams, matches, params, ratings, n_sims=args.sims, seed=args.seed)
+    name = {t.team_id: t.name for t in teams}
+
+    for g in sorted(base):
+        table = sorted(base[g].values(), key=lambda s: s.sort_key())
+        print(f"\nGroup {g}            P  Pts  GD  GF   Adv%   Win%   Status")
+        print("-" * 62)
+        for s in table:
+            a = adv[s.team_id]
+            status = "through" if a >= 0.9995 else "out" if a <= 0.0005 else "alive"
+            print(f"  {name[s.team_id]:<18}{s.played:>2}{s.points:>5}{s.gd:>+4}{s.gf:>4}"
+                  f"{a*100:>7.1f}{win[s.team_id]*100:>7.1f}   {status}")
+    print("\n(Adv% = reach knockout incl. best-third; conditioned on games already played.)")
+    return 0
+
+
 def cmd_accuracy(args, paths: Paths) -> int:
     rows = read_predictions(paths.predictions_csv)
     summary = summarize(rows, recent=args.recent)
@@ -471,6 +495,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="disable the tournament-form overlay (Elo only)")
     s.add_argument("--recent", type=int, default=10)
     s.set_defaults(func=cmd_replay)
+
+    s = sub.add_parser("qualify", help="group qualification chances, conditioned on results so far")
+    s.add_argument("--sims", type=int, default=20000)
+    s.add_argument("--seed", type=int, default=42)
+    s.set_defaults(func=cmd_qualify)
 
     s = sub.add_parser("accuracy", help="review prediction accuracy over recorded results")
     s.add_argument("--recent", type=int, default=10, help="window for the recent-trend score")
