@@ -205,6 +205,14 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
 
     idx = build_name_index(teams)
     odds_map = _load_odds(paths)
+    # Fixtures already played (recorded in results.csv) must not show as "upcoming",
+    # even if the schedule's own Result column hasn't been filled in.
+    played = set()
+    res_path = paths.data_dir / "results.csv"
+    if res_path.exists():
+        with res_path.open("r", encoding="utf-8", newline="") as fh:
+            for r in csv.DictReader(fh):
+                played.add(frozenset((r["home_team_id"], r["away_team_id"])))
     sched = paths.data_dir / "fifa_worldcup_2026_schedule.csv"
     rows = []
     with sched.open("r", encoding="utf-8", newline="") as fh:
@@ -216,6 +224,8 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
             h = idx.get(_norm_name(r.get("Home Team", "")))
             a = idx.get(_norm_name(r.get("Away Team", "")))
             if not h or not a:
+                continue
+            if frozenset((h, a)) in played:
                 continue
             try:
                 dt = datetime.strptime(r["Date"].strip(), "%d/%m/%Y %H:%M")
