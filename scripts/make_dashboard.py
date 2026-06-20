@@ -21,7 +21,7 @@ from wcpredictor.simulate import run_simulation
 from wcpredictor.tournament import TeamStanding
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "web" / "index.html"
+OUT = ROOT / "index.html"   # repo root so Vercel/zero-config static serves it at "/"
 N_SIMS = 20000
 
 
