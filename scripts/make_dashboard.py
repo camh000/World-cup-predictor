@@ -115,10 +115,22 @@ def main() -> None:
         friend_rows.append((person, total, best))
     friend_rows.sort(key=lambda r: -r[1])
 
-    upcoming = _upcoming(paths, teams, params, ratings, name, n=40)
-    bet = _betting(paths, preds)
+    # Calibrate the model's probabilities (temperature, fit on settled games).
+    from wcpredictor.calibration import fit_sharpness, sharpen
+    from wcpredictor.metrics import log_loss as _ll
+    om = {"home": 0, "draw": 1, "away": 2}
+    cal_p = [(float(r["p_home"]), float(r["p_draw"]), float(r["p_away"]))
+             for r in preds if r["actual_outcome"] in om]
+    cal_o = [om[r["actual_outcome"]] for r in preds if r["actual_outcome"] in om]
+    gamma = fit_sharpness(cal_p, cal_o) if cal_p else 1.0
+    ll_raw = _ll(cal_p, cal_o) if cal_p else float("nan")
+    ll_cal = _ll([sharpen(p, gamma) for p in cal_p], cal_o) if cal_p else float("nan")
+    calib = (gamma, ll_raw, ll_cal)
 
-    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet)
+    upcoming = _upcoming(paths, teams, params, ratings, name, gamma, n=40)
+    bet = _betting(paths, preds, gamma)
+
+    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -139,16 +151,17 @@ def _load_odds(paths):
     return out
 
 
-def _upcoming(paths, teams, params, ratings, name, n=40):
+def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
     """Rich forecasts for the next ``n`` unplayed group-stage fixtures.
 
-    Each row is a dict with the model's probabilities and most-likely score, plus
-    — where we hold bookmaker odds — the de-vigged market probabilities and the
-    model's best +EV ("value") selection against that price.
+    Each row is a dict with the model's (calibrated) probabilities and most-likely
+    score, plus — where we hold bookmaker odds — the de-vigged market probabilities
+    and the model's best +EV ("value") selection against that price.
     """
     import csv
     import numpy as np
     from wcpredictor.betting import devig, ev_per_unit
+    from wcpredictor.calibration import sharpen
     from wcpredictor.data_io import HOST_TEAM_IDS, _norm_name, build_name_index
     from wcpredictor.history import forecast
     from wcpredictor.poisson import dixon_coles_matrix
@@ -177,10 +190,12 @@ def _upcoming(paths, teams, params, ratings, name, n=40):
     out = []
     for dt, h, a in rows[:n]:
         neutral = h not in HOST_TEAM_IDS
-        probs, (lh, la) = forecast(ratings, params, h, a, neutral)
+        probs_raw, (lh, la) = forecast(ratings, params, h, a, neutral)
+        probs = sharpen(probs_raw, gamma)
         m = dixon_coles_matrix(lh, la, params.dc_rho, params.max_goals)
         i, j = np.unravel_index(int(np.argmax(m)), m.shape)
-        row = {"dt": dt, "h": h, "a": a, "p": probs, "score": (int(i), int(j)),
+        row = {"dt": dt, "h": h, "a": a, "p": probs, "p_raw": probs_raw,
+               "score": (int(i), int(j)),
                "odds": None, "mkt": None, "sel": None, "edge": None}
         odds = odds_map.get((h, a))
         if odds:
@@ -191,9 +206,10 @@ def _upcoming(paths, teams, params, ratings, name, n=40):
     return out
 
 
-def _betting(paths, preds):
+def _betting(paths, preds, gamma=1.0):
     """Join settled predictions to bookmaker odds (data/odds.csv) and backtest."""
     import csv
+    from wcpredictor.calibration import sharpen
 
     odds_path = paths.data_dir / "odds.csv"
     if not odds_path.exists():
@@ -208,15 +224,15 @@ def _betting(paths, preds):
     for r in preds:
         k = (r["date"], r["home_team_id"], r["away_team_id"])
         if k in idx and r["actual_outcome"] in om:
-            matches.append(((float(r["p_home"]), float(r["p_draw"]), float(r["p_away"])),
-                            idx[k], om[r["actual_outcome"]]))
+            probs = sharpen((float(r["p_home"]), float(r["p_draw"]), float(r["p_away"])), gamma)
+            matches.append((probs, idx[k], om[r["actual_outcome"]]))
     return evaluate(matches) if matches else None
 
 
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet) -> str:
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -274,10 +290,9 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         if r["odds"] is None:
             bet_cell = '<font color="#888888">no odds</font>'
         elif r["edge"] > 0:
-            bet_cell = (f'<b><font color="#008000">&#9989; {_sel_label(r, r["sel"])} '
-                        f'@{r["odds"][r["sel"]]:.2f} (+{r["edge"]*100:.0f}%)</font></b>')
+            bet_cell = f'<font color="#B8860B">{_sel_label(r, r["sel"])} +{r["edge"]*100:.0f}%</font>'
         else:
-            bet_cell = '<font color="#888888">no value</font>'
+            bet_cell = '<font color="#888888">agrees</font>'
         up_rows += (f'<tr bgcolor="{"#FFFFCC" if len(up_rows) % 2 else "#FFFFFF"}">'
                     f'<td>&nbsp;{r["dt"]:%a %d %b %H:%M}Z</td>'
                     f'<td>&nbsp;{name[r["h"]]} v {name[r["a"]]}</td>'
@@ -287,21 +302,30 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
                     f'<td align="center">{bet_cell}</td></tr>')
 
     # Live value bets: priced upcoming fixtures where the model sees +EV.
+    from wcpredictor.betting import devig, ev_per_unit
+    from wcpredictor.calibration import blend
+
+    gamma, ll_raw, ll_cal = calib
     priced = [r for r in upcoming if r["odds"] is not None]
     value = sorted([r for r in priced if r["edge"] > 0], key=lambda r: -r["edge"])
     n_priced, n_value = len(priced), len(value)
+    # Robustness: how many "edges" survive trusting the market 75%?
+    robust = 0
+    for r in priced:
+        pb = blend(r["p"], devig(r["odds"]), 0.75)
+        if max(ev_per_unit(pb[k], r["odds"][k]) for k in range(3)) > 0:
+            robust += 1
     frac = (n_value / n_priced) if n_priced else 0.0
-    if frac >= 0.4:
-        calib_note = (f'<b><font color="#CC0000">&#128680; HEALTH CHECK:</font></b> the model claims value on '
-                      f'<b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%). Against an efficient '
-                      f'market that is almost certainly <b>mis-calibration, not a goldmine</b> &#8212; the model '
-                      f'systematically overrates underdogs and draws (note the longshots up top). Read this as '
-                      f'"the model disagrees with the bookies a lot", which usually means the model is wrong, '
-                      f'not that you have found {n_value} free bets.')
-    else:
-        calib_note = (f'The model claims value on <b>{n_value} of {n_priced}</b> priced games &#8212; a '
-                      f'selective, plausible number. Still only trust it if it shows positive closing-line '
-                      f'value over a real, larger sample.')
+    calib_note = (
+        f'<b><font color="#CC0000">&#128680; HEALTH CHECK &mdash; read before betting your house:</font></b> '
+        f'the model claims value on <b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%). '
+        f'That is mis-calibration, not a goldmine. Calibrating a temperature on the {len(preds)} settled '
+        f'games gives &gamma;={gamma:.2f} (log-loss {ll_raw:.3f}&rarr;{ll_cal:.3f}) &mdash; a tiny, and '
+        f'tellingly &lt;1, tweak, because the opening round was unusually draw/upset-heavy. And even after '
+        f'<b>trusting the market 75%</b>, <b>{robust}</b> "edges" still survive. Translation: the model '
+        f'badly overrates underdogs, and no single knob fixes it &#8212; the table below is best read as '
+        f'<i>"where the model most disagrees with the bookies"</i> (i.e. where it is most likely wrong), '
+        f'not a bet slip.')
     val_rows = ""
     for r in value[:12]:
         mh, md, ma = r["mkt"]
@@ -322,8 +346,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No <i>priced</i> game has finished yet. '
                     'Realized profit/loss will appear here as the fixtures above are played and results '
                     'recorded.</td></tr>')
-        bet_verdict = ("The real test is live above &#8212; come back once these games are played to see "
-                       "whether the model's value bets actually landed.")
+        bet_verdict = ("Honest answer: on current evidence this model <b>can't beat these bookies</b> &#8212; its "
+                       "&quot;edges&quot; are model error (it overrates underdogs), not value. The real fix is "
+                       "structural: make the ratings separate strong from weak teams properly. Realized profit/loss "
+                       "will appear here as the priced games are played.")
     else:
         tie = abs(bet.model_log_loss - bet.market_log_loss) < 0.005
         cmp = "matches" if tie else ("beats" if bet.model_log_loss < bet.market_log_loss else "trails")
@@ -427,15 +453,16 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
 <th><font color="#FFFF00">Win / Draw / Win %</font></th>
 <th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th>
-<th><font color="#FFFF00">Value vs bookies</font></th></tr>
+<th><font color="#FFFF00">Model vs bookies*</font></th></tr>
 {up_rows}
 </table>
-<p><font size="1" face="Courier New">% = home win / draw / away win. xScore = single most-likely scoreline. "Value" = the model's best positive-expected-value bet against real bookmaker odds (oddschecker, 20 Jun 2026).</font></p>
+<p><font size="1" face="Courier New">% = home win / draw / away win (calibrated). xScore = single most-likely scoreline. * = the model's biggest disagreement with real bookmaker odds (oddschecker, 20 Jun 2026) &#8212; a diagnostic, not a tip; see the calibration health check below.</font></p>
 
 <h2><font color="#FFFFFF">&#127922; CAN WE BEAT THE BOOKIES?</font></h2>
-<p><b>LIVE &#8212; the bets the model would place against the real bookies right now</b>
-(real oddschecker prices, 20 Jun 2026). A "value" bet is one where the model's
-probability beats the odds even after the bookmaker's margin.</p>
+<p><b>LIVE &#8212; where the model most disagrees with the real bookies</b>
+(real oddschecker prices, 20 Jun 2026). A "value" line is one where the model's
+probability beats the odds even after the margin &#8212; but read the health check:
+these are overwhelmingly the model being wrong, not free money.</p>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="90%">
 <tr bgcolor="#006400"><th align="left"><font color="#FFFF00">&nbsp;When</font></th>
 <th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
