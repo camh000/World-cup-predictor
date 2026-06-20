@@ -108,6 +108,29 @@ The live fetcher uses [football-data.org](https://www.football-data.org/); set
 `FOOTBALL_DATA_API_KEY` and install the `api` extra. Without it the engine works
 fully offline — just record results with `update-result`.
 
+### Can it beat the bookies?
+
+`src/wcpredictor/betting.py` does the honest test — not "is the model better than
+guessing" but "is it better than the **market**, after the bookmaker's margin".
+It de-vigs decimal odds into fair probabilities, scores the model against them
+with log-loss, and backtests flat-stake and fractional-Kelly bankrolls over every
++EV bet. The dashboard's "Can we beat the bookies?" panel shows the result.
+
+By default it reads a **synthetic** `data/odds.csv` (`scripts/make_sample_odds.py`
+builds an efficient market as sharp as the model + a 6.5% margin), which honestly
+shows the sobering truth: matching the market still leaves **zero +EV bets** — the
+vig locks you out unless you are genuinely *sharper* than the price. To run a real
+test, replace `data/odds.csv` with genuine closing decimal odds:
+
+```
+date,home_team_id,away_team_id,odds_home,odds_draw,odds_away
+2026-06-11,MEX,RSA,2.10,3.40,3.60
+```
+
+> A backtest that prints profit on a synthetic market built from the model's own
+> numbers is **circular** and meaningless — the only trustworthy signal is positive
+> closing-line value over a real, sizeable sample.
+
 ## Data
 
 - `data/teams.csv` — the **real 48 teams and official group draw** for the 2026

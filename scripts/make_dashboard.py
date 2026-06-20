@@ -14,6 +14,7 @@ from pathlib import Path
 
 from wcpredictor.config import Params, Paths
 from wcpredictor.data_io import read_matches, read_teams
+from wcpredictor.betting import evaluate
 from wcpredictor.history import read_predictions, summarize
 from wcpredictor.ratings import RatingStore
 from wcpredictor.scenarios import qualification
@@ -115,8 +116,9 @@ def main() -> None:
     friend_rows.sort(key=lambda r: -r[1])
 
     upcoming = _upcoming(paths, teams, params, ratings, name, n=8)
+    bet = _betting(paths, preds)
 
-    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming)
+    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -160,10 +162,32 @@ def _upcoming(paths, teams, params, ratings, name, n=8):
     return out
 
 
+def _betting(paths, preds):
+    """Join settled predictions to bookmaker odds (data/odds.csv) and backtest."""
+    import csv
+
+    odds_path = paths.data_dir / "odds.csv"
+    if not odds_path.exists():
+        return None
+    idx = {}
+    with odds_path.open("r", encoding="utf-8", newline="") as fh:
+        for r in csv.DictReader(fh):
+            idx[(r["date"], r["home_team_id"], r["away_team_id"])] = (
+                float(r["odds_home"]), float(r["odds_draw"]), float(r["odds_away"]))
+    om = {"home": 0, "draw": 1, "away": 2}
+    matches = []
+    for r in preds:
+        k = (r["date"], r["home_team_id"], r["away_team_id"])
+        if k in idx and r["actual_outcome"] in om:
+            matches.append(((float(r["p_home"]), float(r["p_draw"]), float(r["p_away"])),
+                            idx[k], om[r["actual_outcome"]]))
+    return evaluate(matches) if matches else None
+
+
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming) -> str:
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -219,6 +243,34 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming) -> 
                     f'<td align="center">{ph*100:.0f} / {pd*100:.0f} / {pa*100:.0f}</td>'
                     f'<td align="center"><b>{pick}</b></td>'
                     f'<td align="center">{si}-{sj}</td></tr>')
+
+    if bet is None:
+        bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No odds loaded. Drop bookmaker '
+                    'decimal odds in <tt>data/odds.csv</tt> '
+                    '(date,home_team_id,away_team_id,odds_home,odds_draw,odds_away) to enable.</td></tr>')
+        bet_verdict = "Awaiting odds &#8212; add some to find out."
+    else:
+        tie = abs(bet.model_log_loss - bet.market_log_loss) < 0.005
+        cmp = "matches" if tie else ("beats" if bet.model_log_loss < bet.market_log_loss else "trails")
+        bet_html = (
+            f'<tr bgcolor="#FFFFFF"><td>&nbsp;Settled matches with odds</td><td align="center">{bet.n_matches}</td></tr>'
+            f'<tr bgcolor="#FFFFCC"><td>&nbsp;Avg bookmaker margin (the vig)</td><td align="center">{bet.avg_overround*100:.1f}%</td></tr>'
+            f'<tr bgcolor="#FFFFFF"><td>&nbsp;Model vs market log-loss</td><td align="center">{bet.model_log_loss:.4f} vs {bet.market_log_loss:.4f}</td></tr>'
+            f'<tr bgcolor="#FFFFCC"><td>&nbsp;+EV bets the model would place</td><td align="center">{bet.n_bets}</td></tr>'
+            f'<tr bgcolor="#FFFFFF"><td>&nbsp;Flat stake (1u/bet) P/L</td><td align="center">{bet.flat_profit:+.2f}u on {bet.flat_staked:.0f}u ({bet.flat_roi*100:+.1f}%)</td></tr>'
+            f'<tr bgcolor="#FFFFCC"><td>&nbsp;&frac14;-Kelly bankroll</td><td align="center">{bet.kelly_start:.0f} &rarr; {bet.kelly_end:.2f} ({bet.kelly_growth*100:+.1f}%)</td></tr>'
+        )
+        if bet.n_bets == 0:
+            bet_verdict = (f"The model {cmp} this market on accuracy, but the {bet.avg_overround*100:.1f}% "
+                           f"margin leaves <b>zero +EV bets</b>. Being as good as the market isn't enough "
+                           f"&#8212; you have to be <i>better</i>.")
+        elif bet.flat_profit > 0:
+            bet_verdict = (f"Flagged {bet.n_bets} +EV bets for a notional <b>{bet.flat_roi*100:+.1f}%</b> "
+                           f"&#8212; but on {bet.n_matches} games that is mostly luck. Believe it only with "
+                           f"positive closing-line value over a real, larger sample.")
+        else:
+            bet_verdict = (f"Flagged {bet.n_bets} +EV bets and <b>lost {bet.flat_roi*100:+.1f}%</b> &#8212; "
+                           f"the usual fate of betting into the margin.")
 
     acc = (f'Log-loss <b>{summary.log_loss:.3f}</b> vs {summary.baseline_log_loss:.3f} baseline '
            f'&middot; top-pick <b>{summary.hit_rate*100:.0f}%</b> &middot; '
@@ -303,6 +355,15 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming) -> 
 {up_rows}
 </table>
 <p><font size="1" face="Courier New">% = home win / draw / away win. xScore = single most-likely scoreline. Form &amp; results so far are baked in.</font></p>
+
+<h2><font color="#FFFFFF">&#127922; CAN WE BEAT THE BOOKIES?</font></h2>
+<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
+<tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;The bookie battle</font></th>
+<th><font color="#FFFF00">Result</font></th></tr>
+{bet_html}
+</table>
+<p><b><font color="#CC0000">VERDICT:</font></b> {bet_verdict}</p>
+<p><font size="1" face="Courier New">&#9888; Demo uses <b>synthetic</b> odds (an efficient market as sharp as the model, plus a 6.5% margin) &#8212; it shows the machinery, not a real edge. Method: de-vig the odds &rarr; compare log-loss &rarr; back only +EV selections &rarr; size with &frac14;-Kelly. Replace <tt>data/odds.csv</tt> with real closing odds for an honest test.</font></p>
 
 <h2><font color="#FFFFFF">&#128221; LATEST PREDICTIONS vs REALITY</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="60%">
