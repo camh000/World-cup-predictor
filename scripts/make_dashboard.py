@@ -232,7 +232,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 
 <table border="3" cellpadding="6" bgcolor="#000000"><tr><td align="center">
 <font color="#00FF00" face="Courier New">YOU ARE VISITOR NUMBER</font><br>
-<font color="#FFFF00" face="Courier New" size="5"><b>{_hits():07d}</b></font>
+<font color="#FFFF00" face="Courier New" size="5"><b><span id="hitcount">{_hits():07d}</span></b></font>
 </td></tr></table>
 
 <p class="panel"><font size="2" face="MS Sans Serif">
@@ -248,6 +248,21 @@ Powered by wcpredictor &#8212; not financial advice!
 </font></p>
 <p><font size="1">&copy; 2026 Predict-O-Matic 3000. Made with &#10084; and a Monte Carlo simulation. webmaster@predictomatic.geocities.com</font></p>
 </center>
+<script>
+/* Real visitor counter: increments a free no-signup counter on each load and
+   shows the true total. Falls back to the offline number if the service is down. */
+(function () {{
+  var el = document.getElementById("hitcount");
+  if (!el) return;
+  fetch("https://abacus.jasoncameron.dev/hit/wc2026-predictomatic/home")
+    .then(function (r) {{ return r.json(); }})
+    .then(function (d) {{
+      var n = d && (d.value !== undefined ? d.value : d.count);
+      if (typeof n === "number") el.textContent = String(n).padStart(7, "0");
+    }})
+    .catch(function () {{ /* keep the fallback number */ }});
+}})();
+</script>
 </body></html>"""
 
 
