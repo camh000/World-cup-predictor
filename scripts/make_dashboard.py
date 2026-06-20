@@ -127,12 +127,28 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 <html><head><meta charset="utf-8">
 <title>:::: WORLD CUP 2026 PREDICT-O-MATIC 3000 ::::</title>
 <style>
-  body {{ background:#008080; color:#000000; font-family:"Comic Sans MS","Trebuchet MS",cursive; }}
-  a {{ color:#0000EE; }}
+  body {{
+    background-color:#008080;
+    background-image:
+      radial-gradient(white 1px, transparent 1px),
+      radial-gradient(white 1px, transparent 1px),
+      repeating-linear-gradient(45deg,#007a7a,#007a7a 14px,#008b8b 14px,#008b8b 28px);
+    background-size: 60px 60px, 60px 60px, auto;
+    background-position: 0 0, 30px 30px, 0 0;
+    color:#000000; font-family:"Comic Sans MS","Trebuchet MS",cursive;
+  }}
+  a {{ color:#0000EE; font-weight:bold; }}
   .blink {{ animation: blink 1s steps(2,start) infinite; }}
   @keyframes blink {{ to {{ visibility:hidden; }} }}
-  h1,h2 {{ font-family:"Times New Roman",serif; }}
+  .rainbow {{ animation: hue 4s linear infinite; }}
+  @keyframes hue {{ from {{ filter:hue-rotate(0deg); }} to {{ filter:hue-rotate(360deg); }} }}
+  h1,h2 {{ font-family:"Impact","Arial Black",sans-serif; }}
   .plaque {{ background:#C0C0C0; border:4px ridge #FFFFFF; padding:6px; }}
+  .panel {{ border:4px outset #C0C0C0; background:#D4D0C8; padding:8px; }}
+  .rbar {{ height:7px; background:linear-gradient(to right,red,orange,yellow,green,blue,violet); }}
+  .cbar {{ height:16px; background:repeating-linear-gradient(45deg,#000 0 12px,#FFD400 12px 24px); }}
+  .new {{ color:#FF0000; font-family:"Impact"; }}
+  button {{ border:3px outset #C0C0C0; background:#C0C0C0; font-family:"MS Sans Serif",sans-serif; }}
 </style></head>
 <body bgcolor="#008080" text="#000000" link="#0000EE" vlink="#551A8B">
 <center>
@@ -144,7 +160,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 <font color="#00FF00" face="Courier New">A self-learning football prophecy machine</font>
 </td></tr></table>
 <p><font face="Courier New" size="2">Last updated: <b>{updated}</b> &nbsp;|&nbsp;
-<span class="blink"><font color="#FF0000">&#9679; LIVE</font></span></font></p>
+<span class="blink"><font color="#FF0000">&#9679; LIVE</font></span> &nbsp;|&nbsp;
+<span class="new blink">&#9733; NEW! &#9733;</span> &nbsp;|&nbsp;
+&#128266; Turn your speakers on! <i>now playing: world_cup_anthem.mid</i></font></p>
+<div class="rbar rainbow"></div>
 
 <table cellpadding="12"><tr valign="top"><td width="45%">
 <h2><font color="#FFFFFF">&#127942; WHO WILL WIN IT?</font></h2>
@@ -173,18 +192,27 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 {pred_rows}
 </table>
 
-<br><hr width="80%">
+<br><div class="cbar"></div>
+<p><font face="Impact" size="4" color="#FFFF00">&#128679; THIS SITE IS UNDER CONSTRUCTION &#128679;</font></p>
+<div class="cbar"></div><br>
+
 <table border="3" cellpadding="6" bgcolor="#000000"><tr><td align="center">
-<font color="#00FF00" face="Courier New">VISITOR COUNTER</font><br>
+<font color="#00FF00" face="Courier New">YOU ARE VISITOR NUMBER</font><br>
 <font color="#FFFF00" face="Courier New" size="5"><b>{_hits():07d}</b></font>
 </td></tr></table>
-<p><font size="2" face="Courier New">
-&#128679; This site is under construction &#128679;<br>
-Best viewed in Netscape Navigator 4.0 at 800x600 &#8212;
-<a href="#">Sign our guestbook!</a> &#8212; <a href="#">&#9993; Email the webmaster</a><br>
-Powered by wcpredictor &#8212; numbers are model estimates, not financial advice!
+
+<p class="panel"><font size="2" face="MS Sans Serif">
+&#128279; <b>THE WORLD CUP WEBRING</b> &#128279;<br>
+[ <a href="#">&#171; Prev</a> | <a href="#">Random</a> | <a href="#">List Sites</a> | <a href="#">Next &#187;</a> ]
 </font></p>
-<p><font size="1">&copy; 2026 Predict-O-Matic. Made with &#10084; and a Monte Carlo simulation.</font></p>
+
+<p><font size="2" face="Courier New">
+Best viewed in <b>Netscape Navigator 4.0</b> at 800x600 &#8212;
+<a href="#">Sign our guestbook!</a> &#8212; <a href="#">&#9993; Email the webmaster</a><br>
+<img alt="[Netscape Now!]" src="data:image/gif;base64,R0lGODlhEAAQAIAAAAAAAP///yH5BAEAAAEALAAAAAAQABAAAAIgjI+py+0Po5y02ouz3rz7D4biSJbmiabqyrbuC8fyTBcAOw==">
+Powered by wcpredictor &#8212; not financial advice!
+</font></p>
+<p><font size="1">&copy; 2026 Predict-O-Matic 3000. Made with &#10084; and a Monte Carlo simulation. webmaster@predictomatic.geocities.com</font></p>
 </center>
 </body></html>"""
 
