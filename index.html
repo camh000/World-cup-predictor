@@ -13,7 +13,10 @@
     background-size: 60px 60px, 60px 60px, auto;
     background-position: 0 0, 30px 30px, 0 0;
     color:#000000; font-family:"Comic Sans MS","Trebuchet MS",cursive;
+    cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2228%22%20height%3D%2228%22%20viewBox%3D%220%200%2028%2028%22%3E%3Ccircle%20cx%3D%2214%22%20cy%3D%2214%22%20r%3D%2212%22%20fill%3D%22%23ffffff%22%20stroke%3D%22%23000000%22%20stroke-width%3D%222%22/%3E%3Cpolygon%20points%3D%2214%2C8%2018%2C11%2016%2C16%2012%2C16%2010%2C11%22%20fill%3D%22%23000000%22/%3E%3Cline%20x1%3D%2214%22%20y1%3D%228%22%20x2%3D%2214%22%20y2%3D%222.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2218%22%20y1%3D%2211%22%20x2%3D%2223.5%22%20y2%3D%229%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2216%22%20y1%3D%2216%22%20x2%3D%2219.5%22%20y2%3D%2221.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2212%22%20y1%3D%2216%22%20x2%3D%228.5%22%20y2%3D%2221.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2210%22%20y1%3D%2211%22%20x2%3D%224.5%22%20y2%3D%229%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3C/svg%3E") 14 14, auto;
   }
+  a, button { cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2228%22%20height%3D%2228%22%20viewBox%3D%220%200%2028%2028%22%3E%3Ccircle%20cx%3D%2214%22%20cy%3D%2214%22%20r%3D%2212%22%20fill%3D%22%23ffffff%22%20stroke%3D%22%23000000%22%20stroke-width%3D%222%22/%3E%3Cpolygon%20points%3D%2214%2C8%2018%2C11%2016%2C16%2012%2C16%2010%2C11%22%20fill%3D%22%23000000%22/%3E%3Cline%20x1%3D%2214%22%20y1%3D%228%22%20x2%3D%2214%22%20y2%3D%222.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2218%22%20y1%3D%2211%22%20x2%3D%2223.5%22%20y2%3D%229%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2216%22%20y1%3D%2216%22%20x2%3D%2219.5%22%20y2%3D%2221.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2212%22%20y1%3D%2216%22%20x2%3D%228.5%22%20y2%3D%2221.5%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3Cline%20x1%3D%2210%22%20y1%3D%2211%22%20x2%3D%224.5%22%20y2%3D%229%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.6%22/%3E%3C/svg%3E") 14 14, pointer; }
+  .boot { position:fixed; left:0; top:0; pointer-events:none; z-index:9999; user-select:none; }
   a { color:#0000EE; font-weight:bold; }
   .blink { animation: blink 1s steps(2,start) infinite; }
   @keyframes blink { to { visibility:hidden; } }
@@ -36,10 +39,13 @@
 <font color="#FFFF00" size="6" face="Impact"><b>~ OFFICIAL PREDICTIONS HQ ~</b></font><br>
 <font color="#00FF00" face="Courier New">A self-learning football prophecy machine</font>
 </td></tr></table>
-<p><font face="Courier New" size="2">Last updated: <b>Saturday 20 June 2026, 09:44 UTC</b> &nbsp;|&nbsp;
+<p><font face="Courier New" size="2">Last updated: <b>Saturday 20 June 2026, 09:51 UTC</b> &nbsp;|&nbsp;
 <span class="blink"><font color="#FF0000">&#9679; LIVE</font></span> &nbsp;|&nbsp;
 <span class="new blink">&#9733; NEW! &#9733;</span> &nbsp;|&nbsp;
-&#128266; Turn your speakers on! <i>now playing: world_cup_anthem.mid</i></font></p>
+&#128266; Turn your speakers on! <i>now playing: Three Lions (Football's Coming Home)</i></font></p>
+<audio id="song" src="three-lions.mp3" autoplay loop preload="auto"></audio>
+<p><button id="playbtn" type="button"><b>&#9654; PLAY ANTHEM</b></button>
+&nbsp;<font size="1" face="Courier New">(starts on its own &#8212; click if your browser blocks autoplay)</font></p>
 <div class="rbar rainbow"></div>
 
 <table cellpadding="12"><tr valign="top"><td width="45%">
@@ -104,6 +110,45 @@ Powered by wcpredictor &#8212; not financial advice!
       if (typeof n === "number") el.textContent = String(n).padStart(7, "0");
     })
     .catch(function () { /* keep the fallback number */ });
+})();
+</script>
+<script>
+/* Autoplay the anthem, with a manual play/pause fallback for strict browsers. */
+(function () {
+  var a = document.getElementById("song"); if (!a) return; a.volume = 0.7;
+  var btn = document.getElementById("playbtn");
+  function upd() { if (btn) btn.innerHTML = a.paused ? "<b>&#9654; PLAY ANTHEM</b>" : "<b>&#9208; PAUSE ANTHEM</b>"; }
+  function start() { var p = a.play(); if (p && p.catch) p.catch(function () {}); }
+  if (btn) btn.addEventListener("click", function () { if (a.paused) a.play(); else a.pause(); });
+  a.addEventListener("play", upd); a.addEventListener("pause", upd);
+  start();
+  var go = function () { start(); document.removeEventListener("click", go); document.removeEventListener("keydown", go); };
+  document.addEventListener("click", go); document.addEventListener("keydown", go);
+})();
+</script>
+<script>
+/* Football-boot cursor trail (the football itself is the cursor). */
+(function () {
+  var N = 10, dots = [], mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  for (var i = 0; i < N; i++) {
+    var s = document.createElement("span");
+    s.className = "boot"; s.textContent = "\uD83D\uDC5F";
+    s.style.fontSize = (20 - i * 1.3) + "px";
+    s.style.opacity = (1 - i / (N + 2));
+    document.body.appendChild(s);
+    dots.push({ el: s, x: mx, y: my });
+  }
+  document.addEventListener("mousemove", function (e) { mx = e.clientX; my = e.clientY; });
+  (function loop() {
+    var px = mx, py = my;
+    for (var i = 0; i < dots.length; i++) {
+      var d = dots[i];
+      d.x += (px - d.x) * 0.35; d.y += (py - d.y) * 0.35;
+      d.el.style.transform = "translate(" + (d.x - 8) + "px," + (d.y - 8) + "px)";
+      px = d.x; py = d.y;
+    }
+    requestAnimationFrame(loop);
+  })();
 })();
 </script>
 </body></html>

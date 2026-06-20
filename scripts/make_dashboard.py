@@ -68,6 +68,24 @@ def _favicon() -> str:
     return "data:image/svg+xml," + urllib.parse.quote(svg)
 
 
+def _cursor() -> str:
+    """A little round football as an SVG data-URI mouse cursor (hotspot at centre)."""
+    import urllib.parse
+
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">'
+        '<circle cx="14" cy="14" r="12" fill="#ffffff" stroke="#000000" stroke-width="2"/>'
+        '<polygon points="14,8 18,11 16,16 12,16 10,11" fill="#000000"/>'
+        '<line x1="14" y1="8" x2="14" y2="2.5" stroke="#000" stroke-width="1.6"/>'
+        '<line x1="18" y1="11" x2="23.5" y2="9" stroke="#000" stroke-width="1.6"/>'
+        '<line x1="16" y1="16" x2="19.5" y2="21.5" stroke="#000" stroke-width="1.6"/>'
+        '<line x1="12" y1="16" x2="8.5" y2="21.5" stroke="#000" stroke-width="1.6"/>'
+        '<line x1="10" y1="11" x2="4.5" y2="9" stroke="#000" stroke-width="1.6"/>'
+        '</svg>'
+    )
+    return "data:image/svg+xml," + urllib.parse.quote(svg)
+
+
 def main() -> None:
     paths = Paths()
     teams = read_teams(paths.teams_csv)
@@ -108,6 +126,7 @@ def main() -> None:
 def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
+    cur = _cursor()
 
     champ_rows = "".join(
         f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
@@ -170,7 +189,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
     background-size: 60px 60px, 60px 60px, auto;
     background-position: 0 0, 30px 30px, 0 0;
     color:#000000; font-family:"Comic Sans MS","Trebuchet MS",cursive;
+    cursor: url("{cur}") 14 14, auto;
   }}
+  a, button {{ cursor: url("{cur}") 14 14, pointer; }}
+  .boot {{ position:fixed; left:0; top:0; pointer-events:none; z-index:9999; user-select:none; }}
   a {{ color:#0000EE; font-weight:bold; }}
   .blink {{ animation: blink 1s steps(2,start) infinite; }}
   @keyframes blink {{ to {{ visibility:hidden; }} }}
@@ -196,7 +218,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 <p><font face="Courier New" size="2">Last updated: <b>{updated}</b> &nbsp;|&nbsp;
 <span class="blink"><font color="#FF0000">&#9679; LIVE</font></span> &nbsp;|&nbsp;
 <span class="new blink">&#9733; NEW! &#9733;</span> &nbsp;|&nbsp;
-&#128266; Turn your speakers on! <i>now playing: world_cup_anthem.mid</i></font></p>
+&#128266; Turn your speakers on! <i>now playing: Three Lions (Football's Coming Home)</i></font></p>
+<audio id="song" src="three-lions.mp3" autoplay loop preload="auto"></audio>
+<p><button id="playbtn" type="button"><b>&#9654; PLAY ANTHEM</b></button>
+&nbsp;<font size="1" face="Courier New">(starts on its own &#8212; click if your browser blocks autoplay)</font></p>
 <div class="rbar rainbow"></div>
 
 <table cellpadding="12"><tr valign="top"><td width="45%">
@@ -261,6 +286,45 @@ Powered by wcpredictor &#8212; not financial advice!
       if (typeof n === "number") el.textContent = String(n).padStart(7, "0");
     }})
     .catch(function () {{ /* keep the fallback number */ }});
+}})();
+</script>
+<script>
+/* Autoplay the anthem, with a manual play/pause fallback for strict browsers. */
+(function () {{
+  var a = document.getElementById("song"); if (!a) return; a.volume = 0.7;
+  var btn = document.getElementById("playbtn");
+  function upd() {{ if (btn) btn.innerHTML = a.paused ? "<b>&#9654; PLAY ANTHEM</b>" : "<b>&#9208; PAUSE ANTHEM</b>"; }}
+  function start() {{ var p = a.play(); if (p && p.catch) p.catch(function () {{}}); }}
+  if (btn) btn.addEventListener("click", function () {{ if (a.paused) a.play(); else a.pause(); }});
+  a.addEventListener("play", upd); a.addEventListener("pause", upd);
+  start();
+  var go = function () {{ start(); document.removeEventListener("click", go); document.removeEventListener("keydown", go); }};
+  document.addEventListener("click", go); document.addEventListener("keydown", go);
+}})();
+</script>
+<script>
+/* Football-boot cursor trail (the football itself is the cursor). */
+(function () {{
+  var N = 10, dots = [], mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  for (var i = 0; i < N; i++) {{
+    var s = document.createElement("span");
+    s.className = "boot"; s.textContent = "\\uD83D\\uDC5F";
+    s.style.fontSize = (20 - i * 1.3) + "px";
+    s.style.opacity = (1 - i / (N + 2));
+    document.body.appendChild(s);
+    dots.push({{ el: s, x: mx, y: my }});
+  }}
+  document.addEventListener("mousemove", function (e) {{ mx = e.clientX; my = e.clientY; }});
+  (function loop() {{
+    var px = mx, py = my;
+    for (var i = 0; i < dots.length; i++) {{
+      var d = dots[i];
+      d.x += (px - d.x) * 0.35; d.y += (py - d.y) * 0.35;
+      d.el.style.transform = "translate(" + (d.x - 8) + "px," + (d.y - 8) + "px)";
+      px = d.x; py = d.y;
+    }}
+    requestAnimationFrame(loop);
+  }})();
 }})();
 </script>
 </body></html>"""
