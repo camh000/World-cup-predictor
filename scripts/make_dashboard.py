@@ -114,16 +114,56 @@ def main() -> None:
         friend_rows.append((person, total, best))
     friend_rows.sort(key=lambda r: -r[1])
 
-    html = _render(df, name, base, adv, win, preds, summary, friend_rows)
+    upcoming = _upcoming(paths, teams, params, ratings, name, n=8)
+
+    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
 
 
+def _upcoming(paths, teams, params, ratings, name, n=8):
+    """Forecasts for the next ``n`` unplayed group-stage fixtures (chronological)."""
+    import csv
+    import numpy as np
+    from wcpredictor.data_io import HOST_TEAM_IDS, _norm_name, build_name_index
+    from wcpredictor.history import forecast
+    from wcpredictor.poisson import dixon_coles_matrix
+
+    idx = build_name_index(teams)
+    sched = paths.data_dir / "fifa_worldcup_2026_schedule.csv"
+    rows = []
+    with sched.open("r", encoding="utf-8", newline="") as fh:
+        for r in csv.DictReader(fh):
+            if (r.get("Result") or "").strip():
+                continue
+            if r.get("Round Number", "").strip() not in {"1", "2", "3"}:
+                continue
+            h = idx.get(_norm_name(r.get("Home Team", "")))
+            a = idx.get(_norm_name(r.get("Away Team", "")))
+            if not h or not a:
+                continue
+            try:
+                dt = datetime.strptime(r["Date"].strip(), "%d/%m/%Y %H:%M")
+            except ValueError:
+                continue
+            rows.append((dt, h, a))
+    rows.sort(key=lambda x: x[0])
+
+    out = []
+    for dt, h, a in rows[:n]:
+        neutral = h not in HOST_TEAM_IDS
+        probs, (lh, la) = forecast(ratings, params, h, a, neutral)
+        m = dixon_coles_matrix(lh, la, params.dc_rho, params.max_goals)
+        i, j = np.unravel_index(int(np.argmax(m)), m.shape)
+        out.append((dt, h, a, probs, (int(i), int(j))))
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
-def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -170,6 +210,16 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
                       f'<td>&nbsp;{r["home_team_id"]} {r["home_goals"]}-{r["away_goals"]} {r["away_team_id"]}</td>'
                       f'<td align="center">{r["predicted_outcome"]}</td>'
                       f'<td align="center">{"HIT" if hit else "miss"}</td></tr>')
+    up_rows = ""
+    for dt, h, a, (ph, pd, pa), (si, sj) in upcoming:
+        pick = name[h] if ph >= max(pd, pa) else (name[a] if pa >= pd else "Draw")
+        up_rows += (f'<tr bgcolor="{"#FFFFCC" if len(up_rows) % 2 else "#FFFFFF"}">'
+                    f'<td>&nbsp;{dt:%a %d %b %H:%M}Z</td>'
+                    f'<td>&nbsp;{name[h]} v {name[a]}</td>'
+                    f'<td align="center">{ph*100:.0f} / {pd*100:.0f} / {pa*100:.0f}</td>'
+                    f'<td align="center"><b>{pick}</b></td>'
+                    f'<td align="center">{si}-{sj}</td></tr>')
+
     acc = (f'Log-loss <b>{summary.log_loss:.3f}</b> vs {summary.baseline_log_loss:.3f} baseline '
            f'&middot; top-pick <b>{summary.hit_rate*100:.0f}%</b> &middot; '
            f'skill <b>{summary.skill*100:+.0f}%</b> over {summary.n} games') if summary else "No games yet."
@@ -243,6 +293,16 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
 
 <h2><font color="#FFFFFF">&#9917; GROUP STAGE &#8212; WHO'S GOING THROUGH?</font></h2>
 <table cellpadding="6"><tr>{groups_html}</tr></table>
+
+<h2><font color="#FFFFFF">&#128302; UPCOMING &#8212; NEXT MATCHES PREDICTED</font></h2>
+<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
+<tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;Kickoff (UTC)</font></th>
+<th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
+<th><font color="#FFFF00">Win / Draw / Win %</font></th>
+<th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th></tr>
+{up_rows}
+</table>
+<p><font size="1" face="Courier New">% = home win / draw / away win. xScore = single most-likely scoreline. Form &amp; results so far are baked in.</font></p>
 
 <h2><font color="#FFFFFF">&#128221; LATEST PREDICTIONS vs REALITY</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="60%">
