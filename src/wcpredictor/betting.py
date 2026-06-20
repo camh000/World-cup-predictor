@@ -36,6 +36,21 @@ def devig(odds: Triple) -> Triple:
     return (inv[0] / s, inv[1] / s, inv[2] / s)
 
 
+def devig_market(odds: Sequence[float]) -> List[float]:
+    """Fair probabilities from ``N`` mutually-exclusive decimal odds.
+
+    Generalises :func:`devig` (fixed to the 1X2 triple) to any number of outcomes,
+    e.g. an outright-winner book. Proportional normalisation, so it handles both an
+    overround (book sums to >1) and the underround you get from taking best-odds
+    across bookmakers (sums to <1). Returns ``[]`` for an empty input.
+    """
+    inv = [1.0 / o if o > 0 else 0.0 for o in odds]
+    s = sum(inv)
+    if s <= 0:
+        return [0.0 for _ in odds]
+    return [x / s for x in inv]
+
+
 def ev_per_unit(prob: float, dec_odds: float) -> float:
     """Expected profit per 1 unit staked on a back bet: p*odds - 1."""
     return prob * dec_odds - 1.0

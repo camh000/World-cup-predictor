@@ -5,6 +5,7 @@ import numpy as np
 from wcpredictor.config import Params
 from wcpredictor.elo import expected_score
 from wcpredictor.poisson import (
+    _spread_transform,
     dixon_coles_matrix,
     expected_goals,
     match_probabilities,
@@ -86,6 +87,59 @@ def test_sampled_scorelines_match_exact_distribution():
         counts[0 if i > j else 1 if i == j else 2] += 1
     for emp, ex in zip((c / n for c in counts), exact):
         assert abs(emp - ex) < 0.012
+
+
+def test_spread_transform_noop_at_slope_one():
+    # slope == 1.0 must be an EXACT identity at every gap (incl. above the knee),
+    # so the default-config model is unchanged.
+    p = Params(spread_slope=1.0, spread_threshold=150.0)
+    for d in (-303.0, -150.0, -10.0, 0.0, 10.0, 120.0, 150.0, 226.5, 303.0, 500.0):
+        assert _spread_transform(d, p) == d
+
+
+def test_spread_transform_identity_below_knee():
+    # At any slope, gaps within +-threshold pass through unchanged.
+    p = Params(spread_slope=0.5, spread_threshold=150.0)
+    for d in (0.0, 50.0, -120.0, 150.0, -150.0):
+        assert _spread_transform(d, p) == d
+
+
+def test_spread_transform_compresses_excess():
+    p = Params(spread_slope=0.5, spread_threshold=150.0)
+    assert math.isclose(_spread_transform(303.0, p), 150.0 + (303.0 - 150.0) * 0.5)  # 226.5
+    assert math.isclose(_spread_transform(303.0, p), 226.5)
+    # Compression shrinks the magnitude but never past the threshold.
+    assert 150.0 < _spread_transform(303.0, p) < 303.0
+
+
+def test_spread_transform_odd_symmetry():
+    p = Params(spread_slope=0.5, spread_threshold=150.0)
+    for d in (10.0, 150.0, 226.5, 303.0, 480.0):
+        assert math.isclose(_spread_transform(-d, p), -_spread_transform(d, p))
+
+
+def test_spread_transform_monotonic_and_continuous():
+    p = Params(spread_slope=0.5, spread_threshold=150.0)
+    xs = [0, 50, 100, 149, 150, 151, 200, 303, 500]
+    effs = [_spread_transform(float(x), p) for x in xs]
+    assert all(b > a for a, b in zip(effs, effs[1:]))      # strictly increasing
+    # continuous across the kink at the threshold
+    assert math.isclose(_spread_transform(150.0, p), 150.0)
+    assert math.isclose(_spread_transform(150.0001, p), 150.0, abs_tol=1e-3)
+
+
+def test_spread_transform_reduces_favourite_probability():
+    # The whole point: compressing the elite tail lowers the favourite's win prob
+    # on a big mismatch, while an at-knee gap is untouched.
+    noop = Params(spread_slope=1.0, spread_threshold=150.0)
+    active = Params(spread_slope=0.5, spread_threshold=150.0)
+    ph_noop = match_probabilities(*expected_goals(303.0, noop), noop.max_goals, noop.dc_rho)[0]
+    ph_active = match_probabilities(*expected_goals(303.0, active), active.max_goals, active.dc_rho)[0]
+    assert ph_active < ph_noop                              # elite favourite compressed
+    # A gap at the knee is identical under both.
+    knee_noop = match_probabilities(*expected_goals(150.0, noop), noop.max_goals, noop.dc_rho)
+    knee_active = match_probabilities(*expected_goals(150.0, active), active.max_goals, active.dc_rho)
+    assert knee_noop == knee_active
 
 
 def test_empirical_winrate_matches_elo_logistic():

@@ -216,6 +216,18 @@ def _build_r32(r32_slots, winners, runners, thirds_by_group):
     return [(resolve(a), resolve(b)) for a, b in r32_slots]
 
 
+def _perturb_ratings(ratings: RatingStore, sigma: float, rng: np.random.Generator) -> RatingStore:
+    """Return a copy of ``ratings`` with each team's Elo jittered by N(0, sigma).
+
+    One draw per team per tournament: models the uncertainty in a team's true
+    strength for *this* tournament. Attack/defense/form are left untouched.
+    """
+    out = ratings.copy()
+    for _, r in out.items():
+        r.elo += float(rng.normal(0.0, sigma))
+    return out
+
+
 def simulate_tournament(
     teams: List[Team],
     params: Params,
@@ -225,7 +237,13 @@ def simulate_tournament(
 ) -> TournamentResult:
     """Simulate one full tournament and return the champion + furthest stage
     reached by every team. ``r32_slots`` is the Round-of-32 bracket spec
-    (defaults to the official 2026 mapping)."""
+    (defaults to the official 2026 mapping).
+
+    When ``params.rating_sigma > 0`` each team's Elo is drawn once from
+    ``N(elo, rating_sigma)`` for this tournament (see ``Params.rating_sigma``);
+    at 0.0 the ratings are used as-is (no RNG draw, so runs stay byte-identical)."""
+    if params.rating_sigma > 0.0:
+        ratings = _perturb_ratings(ratings, params.rating_sigma, rng)
     groups = teams_by_group(teams)
     reached: Dict[str, str] = {t.team_id: "group" for t in teams}
 

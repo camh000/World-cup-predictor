@@ -2,6 +2,7 @@ import math
 
 from wcpredictor.betting import (
     devig,
+    devig_market,
     evaluate,
     ev_per_unit,
     kelly_fraction,
@@ -18,6 +19,17 @@ def test_devig_sums_to_one_and_reports_margin():
     odds2 = (1.9, 3.8, 3.8)  # inflated -> positive overround
     assert overround(odds2) > 0
     assert abs(sum(devig(odds2)) - 1.0) < 1e-12
+
+
+def test_devig_market_normalises_any_length():
+    # Overround book (sums >1) and underround best-odds book (sums <1) both
+    # normalise to a valid distribution preserving the ordering.
+    over = devig_market([2.0, 4.0, 4.0, 10.0])
+    assert abs(sum(over) - 1.0) < 1e-12
+    assert over[0] > over[1] > over[3]
+    under = devig_market([8.0, 9.0, 30.0])     # 1/8+1/9+1/30 = 0.272 < 1
+    assert abs(sum(under) - 1.0) < 1e-12
+    assert devig_market([]) == []
 
 
 def test_ev_and_kelly():
