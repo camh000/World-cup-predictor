@@ -41,6 +41,22 @@ def test_append_writes_header_once_and_never_truncates(tmp_path):
     assert lines[1:] == ["1,2", "3,4"]  # both snapshots preserved (append-only)
 
 
+def test_select_keys_ignores_non_football_world_cups():
+    # Regression: 'world_cup' alone wrongly matched cricket_t20_world_cup_womens
+    # (sorts before soccer), fetching cricket odds that drop to zero 1X2 rows.
+    m = _load()
+    sports = [
+        {"key": "cricket_t20_world_cup_womens", "active": True},
+        {"key": "soccer_fifa_world_cup_qualifiers_conmebol", "active": False},
+        {"key": "soccer_fifa_world_cup_winner", "active": True},
+        {"key": "soccer_fifa_world_cup", "active": True},
+    ]
+    assert m._select_keys(sports) == ("soccer_fifa_world_cup", "soccer_fifa_world_cup_winner")
+    # Nothing active / nothing FIFA -> no keys.
+    assert m._select_keys([{"key": "cricket_t20_world_cup_womens", "active": True}]) == (None, None)
+    assert m._select_keys([{"key": "soccer_fifa_world_cup", "active": False}]) == (None, None)
+
+
 def test_load_dotenv_real_env_wins(tmp_path, monkeypatch):
     m = _load()
     f = tmp_path / "envfile"
