@@ -13,6 +13,12 @@ on:
 permissions:
   contents: write
 
+# The append-only odds history corrupts if two runs (cron + manual) race on the
+# same branch, so serialise refreshes and never cancel one mid-commit.
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -45,6 +51,13 @@ jobs:
           git config user.name "wc-predictor-bot"
           git config user.email "bot@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "Auto-refresh results, odds & dashboard"
-          git push || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-refresh results, odds & dashboard"
+            # Rebase onto any concurrent commit before pushing; let a real push
+            # failure surface (no '|| true') instead of silently dropping data.
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+            git push
+          fi
 

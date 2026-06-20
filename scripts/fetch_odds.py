@@ -27,6 +27,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 from wcpredictor.data_io import _norm_name, build_name_index, read_teams
@@ -96,7 +97,7 @@ def fetch_matches(api_key, key, regions, idx):
         date = ev.get("commence_time", "")[:10]
         rows.append([date, h, a, round(oh, 3), round(od, 3), round(oa, 3)])
     rows.sort(key=lambda r: (r[0], r[1]))
-    return rows, rem
+    return rows, rem, len(events)
 
 
 def fetch_outrights(api_key, key, regions, idx):
@@ -104,13 +105,15 @@ def fetch_outrights(api_key, key, regions, idx):
                        {"apiKey": api_key, "regions": regions, "markets": "outrights",
                         "oddsFormat": "decimal"})
     best = {}
+    seen_names = set()
     for ev in events:
         for team, price in _best_prices(ev).items():
+            seen_names.add(team)
             tid = idx.get(_norm_name(team))
             if tid and price > 0:
                 best[tid] = max(price, best.get(tid, 0.0))
     rows = sorted(([tid, round(p, 2)] for tid, p in best.items()), key=lambda r: r[1])
-    return rows, rem
+    return rows, rem, len(seen_names)
 
 
 def _write(path, header, rows):
@@ -120,6 +123,60 @@ def _write(path, header, rows):
         w.writerows(rows)
 
 
+def _append(path, header, rows):
+    """Append ``rows`` to ``path``, writing ``header`` first iff the file is new.
+
+    Used to accumulate a timestamped odds history (for closing-line-value) without
+    ever destroying past snapshots, in contrast to the overwriting latest view.
+    """
+    new = not path.exists()
+    with path.open("a", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh)
+        if new:
+            w.writerow(header)
+        w.writerows(rows)
+
+
+def _err(e) -> str:
+    """A log-safe description of a network error that NEVER leaks the URL/apiKey."""
+    if isinstance(e, urllib.error.HTTPError):
+        return f"HTTP {e.code}"
+    if isinstance(e, urllib.error.URLError):
+        return f"network error ({type(e.reason).__name__})"
+    return type(e).__name__
+
+
+# Errors from a priced call that we catch and turn into a safe no-op (keep existing
+# CSVs, spend no further credits). HTTPError (401/429 etc.) and URLError both
+# subclass OSError; OSError also covers a bare read-phase TimeoutError /
+# ConnectionResetError that is not wrapped in URLError.
+_FETCH_ERRORS = (OSError, json.JSONDecodeError)
+
+
+def _load_dotenv(path: Path = ROOT / ".env") -> None:
+    """Load simple ``KEY=value`` lines from a ``.env`` file into ``os.environ``.
+
+    Zero-dependency and deliberately minimal: blank lines and ``#`` comments are
+    ignored, surrounding quotes are stripped, and a leading ``export`` is allowed.
+    A real environment variable always wins over the file (``setdefault``), and a
+    missing file is a quiet no-op — so this never overrides CI secrets and keeps
+    the no-key-no-op behaviour intact. ``.env`` is git-ignored (see .gitignore).
+    """
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key = key.strip()
+        val = val.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, val)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--regions", default="uk", help="comma list; costs 1 credit PER region")
@@ -127,6 +184,7 @@ def main() -> None:
     ap.add_argument("--skip-matches", action="store_true", help="outright odds only (1 credit)")
     args = ap.parse_args()
 
+    _load_dotenv()
     api_key = os.environ.get("ODDS_API_KEY")
     if not api_key:
         print("ODDS_API_KEY not set — skipping odds fetch (no credits spent).")
@@ -135,36 +193,58 @@ def main() -> None:
     idx = build_name_index(read_teams(DATA / "teams.csv"))
     idx.update({_norm_name(k): v for k, v in ALIASES.items()})
 
+    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
-        match_key, winner_key = _find_keys(api_key)  # free
-    except urllib.error.HTTPError as e:
-        print(f"Could not list sports (HTTP {e.code}); aborting to save credits.")
+        match_key, winner_key = _find_keys(api_key)  # free (0 credits)
+    except _FETCH_ERRORS as e:
+        print(f"Could not list sports ({_err(e)}); aborting to save credits.")
         sys.exit(0)
 
     remaining = None
     if not args.skip_matches:
-        if match_key:
-            rows, remaining = fetch_matches(api_key, match_key, args.regions, idx)
-            if rows:
-                _write(DATA / "odds.csv",
-                       ["date", "home_team_id", "away_team_id",
-                        "odds_home", "odds_draw", "odds_away"], rows)
-                print(f"Wrote data/odds.csv ({len(rows)} matches) from '{match_key}'.")
+        if not match_key:
+            print("No active World Cup match market found (kept existing odds).")
+        else:
+            try:
+                rows, remaining, seen = fetch_matches(api_key, match_key, args.regions, idx)
+            except _FETCH_ERRORS as e:
+                print(f"Match odds fetch failed ({_err(e)}); kept existing data/odds.csv.")
+                rows, seen = [], 0
+            header = ["date", "home_team_id", "away_team_id",
+                      "odds_home", "odds_draw", "odds_away"]
+            if rows and seen and len(rows) < 0.5 * seen:
+                print(f"Only matched {len(rows)}/{seen} match events (<50%); kept existing "
+                      f"data/odds.csv (suspect name-matching, not overwriting).")
+            elif rows:
+                _write(DATA / "odds.csv", header, rows)
+                _append(DATA / "odds_history.csv", ["fetched_at"] + header,
+                        [[fetched_at] + r for r in rows])
+                print(f"Wrote data/odds.csv ({len(rows)}/{seen} matches) from '{match_key}' "
+                      f"+ snapshot -> data/odds_history.csv.")
             else:
                 print("No match odds returned (kept existing data/odds.csv).")
-        else:
-            print("No active World Cup match market found (kept existing odds).")
 
     if not args.skip_outrights:
-        if winner_key:
-            rows, remaining = fetch_outrights(api_key, winner_key, args.regions, idx)
-            if rows:
-                _write(DATA / "outright_odds.csv", ["team_id", "odds_decimal"], rows)
-                print(f"Wrote data/outright_odds.csv ({len(rows)} teams) from '{winner_key}'.")
+        if not winner_key:
+            print("No active World Cup winner market found (kept existing outrights).")
+        else:
+            try:
+                rows, remaining, seen = fetch_outrights(api_key, winner_key, args.regions, idx)
+            except _FETCH_ERRORS as e:
+                print(f"Outright odds fetch failed ({_err(e)}); kept existing outright_odds.csv.")
+                rows, seen = [], 0
+            header = ["team_id", "odds_decimal"]
+            if rows and seen and len(rows) < 0.5 * seen:
+                print(f"Only matched {len(rows)}/{seen} outright teams (<50%); kept existing "
+                      f"outright_odds.csv (suspect name-matching, not overwriting).")
+            elif rows:
+                _write(DATA / "outright_odds.csv", header, rows)
+                _append(DATA / "outright_history.csv", ["fetched_at"] + header,
+                        [[fetched_at] + r for r in rows])
+                print(f"Wrote data/outright_odds.csv ({len(rows)}/{seen} teams) from '{winner_key}' "
+                      f"+ snapshot -> data/outright_history.csv.")
             else:
                 print("No outright odds returned (kept existing outright_odds.csv).")
-        else:
-            print("No active World Cup winner market found (kept existing outrights).")
 
     if remaining is not None:
         print(f"the-odds-api credits remaining this month: {remaining}")
