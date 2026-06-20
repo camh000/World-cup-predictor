@@ -1,8 +1,10 @@
 name: Refresh results & odds
 
-# Auto-fetch new results, re-learn, and refresh the odds. Opt-in: set the
-# repository secret FOOTBALL_DATA_API_KEY (free key from football-data.org).
-# Without the secret the job no-ops, so it is safe to leave enabled.
+# Auto-fetch new results, re-learn, refresh odds, and rebuild the dashboard.
+# Both API keys are opt-in repository secrets; each step no-ops without its key,
+# so it is safe to leave enabled.
+#   FOOTBALL_DATA_API_KEY  - free key from football-data.org (match results)
+#   ODDS_API_KEY           - free key from the-odds-api.com (bookmaker odds)
 on:
   schedule:
     - cron: "0 6 * * *"     # daily at 06:00 UTC
@@ -21,21 +23,28 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: pip install -e ".[api]"
-      - name: Fetch results, re-learn, refresh odds
+      - name: Fetch results & re-learn
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
         run: |
           if [ -z "$FOOTBALL_DATA_API_KEY" ]; then
-            echo "FOOTBALL_DATA_API_KEY not set — skipping auto-refresh."
-            exit 0
+            echo "FOOTBALL_DATA_API_KEY not set — skipping results refresh."
+          else
+            wcpredict fetch-results || true
+            wcpredict replay --quiet || true
+            python scripts/sweepstakes.py || true
           fi
-          wcpredict fetch-results || true
-          wcpredict replay --quiet || true
-          python scripts/sweepstakes.py || true
+      - name: Refresh bookmaker odds (2 credits/run)
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python scripts/fetch_odds.py || true
+      - name: Rebuild dashboard
+        run: python scripts/make_dashboard.py || true
       - name: Commit any changes
         run: |
           git config user.name "wc-predictor-bot"
           git config user.email "bot@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "Auto-refresh results & odds"
+          git diff --cached --quiet || git commit -m "Auto-refresh results, odds & dashboard"
           git push || true
+

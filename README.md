@@ -131,6 +131,15 @@ date,home_team_id,away_team_id,odds_home,odds_draw,odds_away
 > numbers is **circular** and meaningless — the only trustworthy signal is positive
 > closing-line value over a real, sizeable sample.
 
+**Auto-fetching real odds.** `scripts/fetch_odds.py` pulls live bookmaker prices
+from [the-odds-api.com](https://the-odds-api.com/) into `data/odds.csv` (match
+1X2) and `data/outright_odds.csv` (tournament winner). It is credit-thrifty: the
+free `/sports` lookup (0 credits) auto-detects the live World Cup keys, then one
+region + one market makes a full refresh just **2 credits** (1 match + 1 outright)
+against the free tier's 500/month. Set the `ODDS_API_KEY` secret and it runs in
+the daily `refresh.yml`; without the key it no-ops. It never overwrites a CSV with
+an empty result and prints the remaining credit balance each run.
+
 ## Data
 
 - `data/teams.csv` — the **real 48 teams and official group draw** for the 2026
