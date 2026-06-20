@@ -1,19 +1,22 @@
 """Probability calibration for the 1X2 forecasts.
 
-The raw model leaks too much probability onto unlikely outcomes (underdog wins
-and draws), so against fair market odds it "finds value" almost everywhere — a
-classic sign of an under-confident, poorly-calibrated model rather than a sharp
-one.
+The raw model is mis-calibrated in a *sign-flipping* way: it was over-confident on
+elite mismatches (rating a top team far above the market in a blow-out) yet
+slightly under-confident on mid-tier favourites, where it leaks probability onto
+draws and underdog wins. Because the error changes sign across the spread, a
+single global temperature cannot fix it — the structural fix lives upstream in the
+non-linear spread compression of :mod:`wcpredictor.poisson` (``Params.spread_slope``).
 
-The fix here is a single-parameter recalibration ("temperature"/sharpening):
+This module provides the *secondary*, market-aware adjustments layered on top:
 
-    q_i  proportional to  p_i ** gamma
-
-with ``gamma`` fitted to minimise log-loss on games already played. ``gamma > 1``
-sharpens the distribution (mass moves onto the favourite, away from longshots and
-draws); ``gamma == 1`` leaves the probabilities unchanged. It is monotonic, keeps
-the probabilities a valid distribution, and adds exactly one degree of freedom —
-appropriate for the handful of results we can fit on.
+  * ``sharpen`` — a single-parameter temperature ``q_i proportional to p_i ** gamma``,
+    fitted to minimise log-loss on settled games. ``gamma > 1`` sharpens (mass onto
+    the favourite, away from longshots and draws); ``gamma == 1`` is unchanged. It
+    is monotonic, keeps a valid distribution, and adds exactly one degree of freedom.
+    With the spread fix in place the fitted gamma now sits close to 1 — the raw
+    model needs almost no sharpening.
+  * ``blend`` — shrink the model toward the market to filter the small, noisy
+    "edges" it still invents on most games.
 """
 
 from __future__ import annotations

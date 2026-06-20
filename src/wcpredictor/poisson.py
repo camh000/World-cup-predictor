@@ -15,6 +15,30 @@ import numpy as np
 from .config import Params
 
 
+def _spread_transform(elo_diff: float, params: Params) -> float:
+    """Compress the *excess* of an Elo gap above ``spread_threshold``.
+
+    A forecast-only, odd-symmetric ("threshold-excess") lens: gaps with
+    magnitude up to ``spread_threshold`` pass through unchanged, and only the
+    part above it is scaled by ``spread_slope``::
+
+        eff = sign(d) * ( min(|d|, T) + max(|d| - T, 0) * s )
+
+    This deflates the over-confidence the raw eloratings.net scale produces on
+    elite mismatches (large gaps) while leaving mid-tier favourites (sub-threshold
+    gaps) untouched -- the error the model makes flips sign across the spread, so
+    a *non-linear* transform is required (a linear shrink only rescales ``beta``
+    and cannot fix a sign-flipping error). ``spread_slope == 1.0`` returns
+    ``elo_diff`` exactly for every gap, i.e. an exact no-op.
+    """
+    mag = abs(elo_diff)
+    t = params.spread_threshold
+    if mag <= t:
+        return elo_diff
+    eff = t + (mag - t) * params.spread_slope
+    return eff if elo_diff > 0 else -eff
+
+
 def expected_goals(
     elo_diff: float,
     params: Params,
@@ -27,16 +51,19 @@ def expected_goals(
 ) -> Tuple[float, float]:
     """Expected goals ``(lambda_home, lambda_away)`` from an Elo difference.
 
-    ``elo_diff`` should already include any home advantage. The optional
-    per-team attack/defense offsets are log-scale adjustments that default to 0,
-    so the model degrades gracefully to a pure-Elo goal model.
+    ``elo_diff`` should already include any home advantage. It is first passed
+    through :func:`_spread_transform` (a forecast-only, non-linear compression of
+    the gap's excess above ``params.spread_threshold``; an exact no-op when
+    ``params.spread_slope == 1.0``). The optional per-team attack/defense offsets
+    are log-scale adjustments that default to 0, so the model degrades gracefully
+    to a pure-Elo goal model.
 
     ``form_home``/``form_away`` are the teams' tournament-form multipliers (1.0 =
     neutral): a team scores in proportion to its own form and concedes in inverse
     proportion to its opponent's form, so an in-form team both scores more and
     concedes less. The ratio is 1.0 when both teams are at neutral form.
     """
-    base = params.beta * elo_diff / params.elo_divisor
+    base = params.beta * _spread_transform(elo_diff, params) / params.elo_divisor
     lam_home = params.mu * math.exp(base + attack_home - defense_away) * (form_home / form_away)
     lam_away = params.mu * math.exp(-base + attack_away - defense_home) * (form_away / form_home)
     return lam_home, lam_away

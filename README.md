@@ -34,6 +34,37 @@ form starts at 1.0 and only changes after a team plays, it has no effect on a
 team's first match and grows in influence over matchdays 2–3. Disable it for a
 pure-Elo run with `wcpredict replay --no-form` (or `form_alpha = 0`).
 
+**Calibration to the market (two forecast-only lenses).** The raw eloratings.net
+scale is mis-calibrated against bookmaker odds in a *sign-flipping* way — it was
+over-confident on elite mismatches yet about right on the mid-tier — and, fed
+through a fixed-rating Monte Carlo, it concentrated a silly ~31% on a single
+outright favourite. Two lenses fix this without distorting the learned Elo:
+
+1. **Spread compression** (`Params.spread_slope`/`spread_threshold`). A non-linear
+   transform on the *effective Elo gap* inside the goal model: gaps up to ~250 pass
+   through untouched and only the excess above that is scaled (default `0.5`). It
+   removes the elite over-confidence (a blow-out favourite no longer reads ~92%)
+   and is an exact no-op at `spread_slope = 1.0`. A *linear* shrink can't do this —
+   it only rescales `beta` and so can't fix an error that changes sign.
+2. **Tournament rating uncertainty** (`Params.rating_sigma`, Elo std-dev). Used
+   *only* by the champion Monte Carlo: each simulated tournament draws every team's
+   strength once from `N(elo, rating_sigma)`, representing the irreducible
+   uncertainty (injuries, form, squad depth) the market prices. Because title odds
+   are ~`p⁵` convex, this deflates an over-concentrated favourite toward the market
+   (default `150` pulls a clear #1 from ~31% to ~17%) **without touching any
+   per-match 1X2 forecast**. `0.0` is an exact no-op.
+
+Both are *forecast-only* and reversible — they never change `update_elo`, so the
+learned ratings and the replay ledger are unaffected. They were chosen on a
+leak-free prior-vs-market grid (`scripts/validate_prior.py`,
+`scripts/decompose_outright.py`), not fitted to match outcomes. The draw rate and
+the Elo learning-rate/form overlay were deliberately left alone: the draw excess
+is ~1.6pt and almost entirely structural Poisson (lowering `mu` would *raise* it),
+and the outright top-heaviness proved insensitive to `k_factor`/form (it is in the
+seeds themselves), so neither was a useful lever. The model still genuinely
+*disagrees* with the market on most single games — it is an Elo-only estimator, and
+that disagreement is mostly its own error, not value; the dashboard says so.
+
 Canonical inputs live in `data/` (committed); the evolving learned model lives in
 `state/` (git-ignored, rebuildable with `wcpredict reset`). A given
 `(state, seed)` pair is fully deterministic.
@@ -116,20 +147,22 @@ It de-vigs decimal odds into fair probabilities, scores the model against them
 with log-loss, and backtests flat-stake and fractional-Kelly bankrolls over every
 +EV bet. The dashboard's "Can we beat the bookies?" panel shows the result.
 
-By default it reads a **synthetic** `data/odds.csv` (`scripts/make_sample_odds.py`
-builds an efficient market as sharp as the model + a 6.5% margin), which honestly
-shows the sobering truth: matching the market still leaves **zero +EV bets** — the
-vig locks you out unless you are genuinely *sharper* than the price. To run a real
-test, replace `data/odds.csv` with genuine closing decimal odds:
+`data/odds.csv` now holds **real** committed bookmaker prices (pulled by
+`scripts/fetch_odds.py`; `scripts/make_sample_odds.py` remains a synthetic fallback
+for offline/testing). The sobering truth still holds against the real market: the
+model's apparent "value" is overwhelmingly its own error, not an edge, and once the
+vig is paid there is no durable +EV. The committed `data/odds.csv` uses decimal
+odds, one row per match:
 
 ```
 date,home_team_id,away_team_id,odds_home,odds_draw,odds_away
 2026-06-11,MEX,RSA,2.10,3.40,3.60
 ```
 
-> A backtest that prints profit on a synthetic market built from the model's own
+> A backtest that prints profit on a **synthetic** market built from the model's own
 > numbers is **circular** and meaningless — the only trustworthy signal is positive
-> closing-line value over a real, sizeable sample.
+> closing-line value over a real, sizeable sample, which is why `scripts/fetch_odds.py`
+> now appends a timestamped snapshot to `data/odds_history.csv` on every run.
 
 **Auto-fetching real odds.** `scripts/fetch_odds.py` pulls live bookmaker prices
 from [the-odds-api.com](https://the-odds-api.com/) into `data/odds.csv` (match

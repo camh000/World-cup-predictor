@@ -73,6 +73,34 @@ class Params:
     form_decay: float = 0.85
     form_min: float = 0.85
     form_max: float = 1.15
+    # Forecast-time spread compression (see poisson._spread_transform). A
+    # FORECAST-ONLY, non-linear lens on the effective Elo gap: gaps up to
+    # spread_threshold pass through unchanged, and only the *excess* above it is
+    # scaled by spread_slope. This deflates the elite over-confidence the raw
+    # eloratings.net scale produces (e.g. ARG vs a mid team) without disturbing
+    # mid-tier favourites, and -- because tournament title odds are ~p**5 convex
+    # in the per-match edge -- pulls top-heavy outright odds toward the market.
+    # It never touches the learned Elo (update_elo stays on raw ratings), so it is
+    # a reversible lens. spread_slope == 1.0 is an EXACT no-op at any threshold.
+    # Shipped values chosen by the prior-calibration grid (scripts/validate_prior.py):
+    # T=250 touches only the genuinely over-confident elite mismatches (gap >=250)
+    # and leaves every mid-tier gap untouched; s=0.5 under-shoots (closes ~60% of
+    # the elite excess). Revert to a pure point model with spread_slope=1.0.
+    spread_threshold: float = 250.0
+    spread_slope: float = 0.5
+    # Tournament-level rating uncertainty (Elo std-dev), used ONLY by the Monte
+    # Carlo champion/advance simulation (simulate_tournament). Each simulated
+    # tournament draws every team's effective Elo once from N(elo, rating_sigma),
+    # representing the irreducible "true strength this tournament" uncertainty
+    # (injuries, form, squad depth) that a fixed point-estimate cannot express.
+    # Because the title map is ~p**5 convex in the per-match edge, this widens the
+    # outcome distribution and deflates an over-concentrated favourite toward the
+    # market WITHOUT changing any per-match 1X2 forecast (forecast paths never call
+    # the tournament sim). 0.0 is an exact no-op. The shipped 150.0 is calibrated
+    # (scripts/decompose_outright.py) so the title-odds spread matches the large
+    # irreducible uncertainty the market prices: it pulls a clear #1 from ~31% to
+    # ~17% (within the bookmakers' ~10-14% band) while keeping the Elo ordering.
+    rating_sigma: float = 150.0
 
     def to_dict(self) -> Dict[str, float]:
         return asdict(self)

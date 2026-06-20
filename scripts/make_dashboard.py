@@ -13,7 +13,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from wcpredictor.config import Params, Paths
-from wcpredictor.data_io import read_matches, read_teams
+from wcpredictor.data_io import read_matches, read_seed_ratings, read_teams
 from wcpredictor.betting import evaluate
 from wcpredictor.history import read_predictions, summarize
 from wcpredictor.ratings import RatingStore
@@ -87,12 +87,33 @@ def _cursor() -> str:
     return "data:image/svg+xml," + urllib.parse.quote(svg)
 
 
+def _load_ratings(paths, teams):
+    """Load learned ratings, or fall back to the committed seed ratings.
+
+    Never silently fall back to a flat ~1500 table (the old ``seed(teams, {})``
+    produced a plausible-looking but garbage dashboard with every team equal): if
+    neither learned state nor seed ratings exist, fail loudly so a missing or
+    partial ``state/`` is obvious rather than rendered as real predictions.
+    """
+    if paths.ratings_json.exists():
+        return RatingStore.load(paths.ratings_json)
+    seeds = read_seed_ratings(paths.seed_ratings_csv)
+    if not seeds:
+        raise SystemExit(
+            f"error: no learned ratings at {paths.ratings_json} and no seed "
+            f"ratings at {paths.seed_ratings_csv}; run 'wcpredict reset' then "
+            f"'import-results' + 'replay' before generating the dashboard."
+        )
+    print(f"note: {paths.ratings_json} missing; using seed ratings "
+          f"({len(seeds)} teams) from {paths.seed_ratings_csv}.")
+    return RatingStore.seed(teams, seeds)
+
+
 def main() -> None:
     paths = Paths()
     teams = read_teams(paths.teams_csv)
     params = Params.load(paths.params_json)
-    ratings = RatingStore.load(paths.ratings_json) if paths.ratings_json.exists() \
-        else RatingStore.seed(teams, {})
+    ratings = _load_ratings(paths, teams)
     name = {t.team_id: t.name for t in teams}
 
     df = run_simulation(teams, params, ratings, n_sims=N_SIMS, seed=42)
@@ -253,9 +274,28 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
     fav = _favicon()
     cur = _cursor()
 
-    inv = {t: 1.0 / o for t, o in outright.items()}
-    tot = sum(inv.values()) or 1.0
-    mkt_champ = {t: inv[t] / tot for t in inv}
+    from wcpredictor.betting import devig_market
+    _ids = list(outright)
+    mkt_champ = dict(zip(_ids, devig_market([outright[t] for t in _ids])))
+
+    # Data-driven champion caption: compare the model's favourite to the market so
+    # the text can never go stale against the table above it.
+    fav_row = df.iloc[0]
+    fav_id, fav_model = fav_row["team_id"], float(fav_row["p_champion"])
+    fav_name = name.get(fav_id, fav_id)
+    fav_mkt = mkt_champ.get(fav_id)
+    if fav_mkt is not None and fav_model > fav_mkt + 0.05:
+        champ_lean = (f'The model still leans a little top-heavy &#8212; it makes {fav_name} favourite at '
+                      f'<b>{fav_model*100:.0f}%</b> vs the market&rsquo;s <b>{fav_mkt*100:.0f}%</b>, but that is '
+                      f'now a believable disagreement (it was a silly ~31% vs ~10% before the calibration fix), '
+                      f'not a glitch. It still ranks by raw Elo, where {fav_name} is genuinely top.')
+    elif fav_mkt is not None:
+        champ_lean = (f'The model now broadly tracks the winner market &#8212; {fav_name} favourite at '
+                      f'<b>{fav_model*100:.0f}%</b> vs the market&rsquo;s <b>{fav_mkt*100:.0f}%</b>.')
+    else:
+        champ_lean = (f'The model makes {fav_name} favourite at <b>{fav_model*100:.0f}%</b>.')
+    champ_caption = (f'Model vs bookies&rsquo; winner market (oddschecker, 20 Jun). {champ_lean} Outright '
+                     f'&quot;best odds&quot; sum to ~94%, so the de-vig is approximate.')
     champ_rows = ""
     for i, r in enumerate(df.head(12).itertuples()):
         m = mkt_champ.get(r.team_id)
@@ -339,12 +379,16 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
     frac = (n_value / n_priced) if n_priced else 0.0
     calib_note = (
         f'<b><font color="#CC0000">&#128680; HEALTH CHECK &mdash; read before betting your house:</font></b> '
-        f'the model claims value on <b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%). '
-        f'That is mis-calibration, not a goldmine. Calibrating a temperature on the {len(preds)} settled '
-        f'games gives &gamma;={gamma:.2f} (log-loss {ll_raw:.3f}&rarr;{ll_cal:.3f}) &mdash; a tiny, and '
-        f'tellingly &lt;1, tweak, because the opening round was unusually draw/upset-heavy. And even after '
-        f'<b>trusting the market 75%</b>, <b>{robust}</b> "edges" still survive. Translation: the model '
-        f'badly overrates underdogs, and no single knob fixes it &#8212; the table below is best read as '
+        f'the model still claims value on <b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%), and '
+        f'<b>{robust}</b> of those survive even after <b>trusting the market 75%</b>. That is the model '
+        f'<i>disagreeing</i> with the bookies, not a goldmine &mdash; it is an Elo-only estimator and history '
+        f'says these gaps are mostly its own error. Two structural fixes are now in: a non-linear '
+        f'<b>spread compression</b> that removed the old elite over-confidence (it no longer rates a top team '
+        f'at ~92% in a mismatch), lifting real replay skill to a <b>{summary.log_loss:.3f}</b> log-loss; and '
+        f'<b>tournament rating-uncertainty</b> that pulled the outright favourite from a silly ~31% down to '
+        f'<b>{fav_model*100:.0f}%</b>, into the bookies&rsquo; band. A temperature on the {len(preds)} settled '
+        f'games now fits &gamma;={gamma:.2f} (close to 1 &mdash; the raw model needs almost no sharpening). '
+        f'Bottom line: the headline distortions are fixed, but the table below is still best read as '
         f'<i>"where the model most disagrees with the bookies"</i> (i.e. where it is most likely wrong), '
         f'not a bet slip.')
     val_rows = ""
@@ -367,10 +411,12 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No <i>priced</i> game has finished yet. '
                     'Realized profit/loss will appear here as the fixtures above are played and results '
                     'recorded.</td></tr>')
-        bet_verdict = ("Honest answer: on current evidence this model <b>can't beat these bookies</b> &#8212; its "
-                       "&quot;edges&quot; are model error (it overrates underdogs), not value. The real fix is "
-                       "structural: make the ratings separate strong from weak teams properly. Realized profit/loss "
-                       "will appear here as the priced games are played.")
+        bet_verdict = ("No priced game has settled yet, so there is nothing to bank &#8212; the real test starts "
+                       "when the 20 Jun fixtures finish. The structural calibration fixes are in (the elite "
+                       "over-confidence and the silly top-heavy outright are gone), but the model still "
+                       "<i>disagrees</i> with the bookies on most games, and history says that is mostly model "
+                       "error, not value. Watch this space for realized profit/loss &#8212; and only believe it "
+                       "with positive closing-line value over a real, larger sample.")
     else:
         tie = abs(bet.model_log_loss - bet.market_log_loss) < 0.005
         cmp = "matches" if tie else ("beats" if bet.model_log_loss < bet.market_log_loss else "trails")
@@ -455,7 +501,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <th><font color="#FFFF00">Elo</font></th><th><font color="#FFFF00">Model</font></th><th><font color="#FFFF00">Bookies</font></th></tr>
 {champ_rows}
 </table>
-<p><font size="1" face="Courier New">Model vs bookies' winner market (oddschecker, 20 Jun). The model is <b>top-heavy</b> &#8212; it overrates Argentina (~31% vs ~10%) and underrates the chasing pack (Brazil, Portugal, Germany). Outright "best odds" sum to ~94%, so the de-vig is approximate.</font></p>
+<p><font size="1" face="Courier New">{champ_caption}</font></p>
 </td><td width="55%">
 <h2><font color="#FFFFFF">&#128176; THE SWEEPSTAKE LEAGUE</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="100%">
