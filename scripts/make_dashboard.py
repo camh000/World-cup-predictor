@@ -115,7 +115,7 @@ def main() -> None:
         friend_rows.append((person, total, best))
     friend_rows.sort(key=lambda r: -r[1])
 
-    upcoming = _upcoming(paths, teams, params, ratings, name, n=8)
+    upcoming = _upcoming(paths, teams, params, ratings, name, n=40)
     bet = _betting(paths, preds)
 
     html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet)
@@ -124,15 +124,37 @@ def main() -> None:
     print(f"Wrote {OUT}")
 
 
-def _upcoming(paths, teams, params, ratings, name, n=8):
-    """Forecasts for the next ``n`` unplayed group-stage fixtures (chronological)."""
+def _load_odds(paths):
+    """Bookmaker decimal odds keyed by (home_id, away_id) from data/odds.csv."""
+    import csv
+
+    odds_path = paths.data_dir / "odds.csv"
+    out = {}
+    if not odds_path.exists():
+        return out
+    with odds_path.open("r", encoding="utf-8", newline="") as fh:
+        for r in csv.DictReader(fh):
+            out[(r["home_team_id"], r["away_team_id"])] = (
+                float(r["odds_home"]), float(r["odds_draw"]), float(r["odds_away"]))
+    return out
+
+
+def _upcoming(paths, teams, params, ratings, name, n=40):
+    """Rich forecasts for the next ``n`` unplayed group-stage fixtures.
+
+    Each row is a dict with the model's probabilities and most-likely score, plus
+    — where we hold bookmaker odds — the de-vigged market probabilities and the
+    model's best +EV ("value") selection against that price.
+    """
     import csv
     import numpy as np
+    from wcpredictor.betting import devig, ev_per_unit
     from wcpredictor.data_io import HOST_TEAM_IDS, _norm_name, build_name_index
     from wcpredictor.history import forecast
     from wcpredictor.poisson import dixon_coles_matrix
 
     idx = build_name_index(teams)
+    odds_map = _load_odds(paths)
     sched = paths.data_dir / "fifa_worldcup_2026_schedule.csv"
     rows = []
     with sched.open("r", encoding="utf-8", newline="") as fh:
@@ -158,7 +180,14 @@ def _upcoming(paths, teams, params, ratings, name, n=8):
         probs, (lh, la) = forecast(ratings, params, h, a, neutral)
         m = dixon_coles_matrix(lh, la, params.dc_rho, params.max_goals)
         i, j = np.unravel_index(int(np.argmax(m)), m.shape)
-        out.append((dt, h, a, probs, (int(i), int(j))))
+        row = {"dt": dt, "h": h, "a": a, "p": probs, "score": (int(i), int(j)),
+               "odds": None, "mkt": None, "sel": None, "edge": None}
+        odds = odds_map.get((h, a))
+        if odds:
+            evs = [ev_per_unit(probs[k], odds[k]) for k in range(3)]
+            sel = max(range(3), key=evs.__getitem__)
+            row.update(odds=odds, mkt=devig(odds), sel=sel, edge=evs[sel])
+        out.append(row)
     return out
 
 
@@ -234,21 +263,67 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
                       f'<td>&nbsp;{r["home_team_id"]} {r["home_goals"]}-{r["away_goals"]} {r["away_team_id"]}</td>'
                       f'<td align="center">{r["predicted_outcome"]}</td>'
                       f'<td align="center">{"HIT" if hit else "miss"}</td></tr>')
+    def _sel_label(row, k):
+        return name[row["h"]] if k == 0 else ("Draw" if k == 1 else name[row["a"]])
+
     up_rows = ""
-    for dt, h, a, (ph, pd, pa), (si, sj) in upcoming:
-        pick = name[h] if ph >= max(pd, pa) else (name[a] if pa >= pd else "Draw")
+    for r in upcoming[:12]:
+        ph, pd, pa = r["p"]
+        si, sj = r["score"]
+        pick = name[r["h"]] if ph >= max(pd, pa) else (name[r["a"]] if pa >= pd else "Draw")
+        if r["odds"] is None:
+            bet_cell = '<font color="#888888">no odds</font>'
+        elif r["edge"] > 0:
+            bet_cell = (f'<b><font color="#008000">&#9989; {_sel_label(r, r["sel"])} '
+                        f'@{r["odds"][r["sel"]]:.2f} (+{r["edge"]*100:.0f}%)</font></b>')
+        else:
+            bet_cell = '<font color="#888888">no value</font>'
         up_rows += (f'<tr bgcolor="{"#FFFFCC" if len(up_rows) % 2 else "#FFFFFF"}">'
-                    f'<td>&nbsp;{dt:%a %d %b %H:%M}Z</td>'
-                    f'<td>&nbsp;{name[h]} v {name[a]}</td>'
+                    f'<td>&nbsp;{r["dt"]:%a %d %b %H:%M}Z</td>'
+                    f'<td>&nbsp;{name[r["h"]]} v {name[r["a"]]}</td>'
                     f'<td align="center">{ph*100:.0f} / {pd*100:.0f} / {pa*100:.0f}</td>'
                     f'<td align="center"><b>{pick}</b></td>'
-                    f'<td align="center">{si}-{sj}</td></tr>')
+                    f'<td align="center">{si}-{sj}</td>'
+                    f'<td align="center">{bet_cell}</td></tr>')
+
+    # Live value bets: priced upcoming fixtures where the model sees +EV.
+    priced = [r for r in upcoming if r["odds"] is not None]
+    value = sorted([r for r in priced if r["edge"] > 0], key=lambda r: -r["edge"])
+    n_priced, n_value = len(priced), len(value)
+    frac = (n_value / n_priced) if n_priced else 0.0
+    if frac >= 0.4:
+        calib_note = (f'<b><font color="#CC0000">&#128680; HEALTH CHECK:</font></b> the model claims value on '
+                      f'<b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%). Against an efficient '
+                      f'market that is almost certainly <b>mis-calibration, not a goldmine</b> &#8212; the model '
+                      f'systematically overrates underdogs and draws (note the longshots up top). Read this as '
+                      f'"the model disagrees with the bookies a lot", which usually means the model is wrong, '
+                      f'not that you have found {n_value} free bets.')
+    else:
+        calib_note = (f'The model claims value on <b>{n_value} of {n_priced}</b> priced games &#8212; a '
+                      f'selective, plausible number. Still only trust it if it shows positive closing-line '
+                      f'value over a real, larger sample.')
+    val_rows = ""
+    for r in value[:12]:
+        mh, md, ma = r["mkt"]
+        mkt_pct = (mh, md, ma)[r["sel"]]
+        val_rows += (f'<tr bgcolor="{"#FFFFCC" if len(val_rows) % 2 else "#FFFFFF"}">'
+                     f'<td>&nbsp;{r["dt"]:%a %d %b}</td>'
+                     f'<td>&nbsp;{name[r["h"]]} v {name[r["a"]]}</td>'
+                     f'<td align="center"><b>{_sel_label(r, r["sel"])}</b></td>'
+                     f'<td align="center">{r["odds"][r["sel"]]:.2f}</td>'
+                     f'<td align="center">{r["p"][r["sel"]]*100:.0f}%</td>'
+                     f'<td align="center">{mkt_pct*100:.0f}%</td>'
+                     f'<td align="center"><b><font color="#008000">+{r["edge"]*100:.0f}%</font></b></td></tr>')
+    if not val_rows:
+        val_rows = ('<tr bgcolor="#FFFFFF"><td colspan="7">&nbsp;No +EV bets found across '
+                    f'{len(priced)} priced fixtures &#8212; the model agrees with the bookies.</td></tr>')
 
     if bet is None:
-        bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No odds loaded. Drop bookmaker '
-                    'decimal odds in <tt>data/odds.csv</tt> '
-                    '(date,home_team_id,away_team_id,odds_home,odds_draw,odds_away) to enable.</td></tr>')
-        bet_verdict = "Awaiting odds &#8212; add some to find out."
+        bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No <i>priced</i> game has finished yet. '
+                    'Realized profit/loss will appear here as the fixtures above are played and results '
+                    'recorded.</td></tr>')
+        bet_verdict = ("The real test is live above &#8212; come back once these games are played to see "
+                       "whether the model's value bets actually landed.")
     else:
         tie = abs(bet.model_log_loss - bet.market_log_loss) < 0.005
         cmp = "matches" if tie else ("beats" if bet.model_log_loss < bet.market_log_loss else "trails")
@@ -351,19 +426,34 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;Kickoff (UTC)</font></th>
 <th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
 <th><font color="#FFFF00">Win / Draw / Win %</font></th>
-<th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th></tr>
+<th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th>
+<th><font color="#FFFF00">Value vs bookies</font></th></tr>
 {up_rows}
 </table>
-<p><font size="1" face="Courier New">% = home win / draw / away win. xScore = single most-likely scoreline. Form &amp; results so far are baked in.</font></p>
+<p><font size="1" face="Courier New">% = home win / draw / away win. xScore = single most-likely scoreline. "Value" = the model's best positive-expected-value bet against real bookmaker odds (oddschecker, 20 Jun 2026).</font></p>
 
 <h2><font color="#FFFFFF">&#127922; CAN WE BEAT THE BOOKIES?</font></h2>
+<p><b>LIVE &#8212; the bets the model would place against the real bookies right now</b>
+(real oddschecker prices, 20 Jun 2026). A "value" bet is one where the model's
+probability beats the odds even after the bookmaker's margin.</p>
+<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="90%">
+<tr bgcolor="#006400"><th align="left"><font color="#FFFF00">&nbsp;When</font></th>
+<th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
+<th><font color="#FFFF00">Bet</font></th><th><font color="#FFFF00">Odds</font></th>
+<th><font color="#FFFF00">Model</font></th><th><font color="#FFFF00">Market</font></th>
+<th><font color="#FFFF00">Edge</font></th></tr>
+{val_rows}
+</table>
+<p>{calib_note}</p>
+<p><font size="1" face="Courier New">&#9888; "Edge" is the model's <i>claimed</i> advantage, not a guarantee &#8212; it is only real if it holds up over many games with positive closing-line value. Showing the top 12 by edge. Stake responsibly; this is for fun, not financial advice.</font></p>
+
+<h3><font color="#FFFFFF">&#128202; Realized scoreboard (settled priced games)</font></h3>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
 <tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;The bookie battle</font></th>
 <th><font color="#FFFF00">Result</font></th></tr>
 {bet_html}
 </table>
 <p><b><font color="#CC0000">VERDICT:</font></b> {bet_verdict}</p>
-<p><font size="1" face="Courier New">&#9888; Demo uses <b>synthetic</b> odds (an efficient market as sharp as the model, plus a 6.5% margin) &#8212; it shows the machinery, not a real edge. Method: de-vig the odds &rarr; compare log-loss &rarr; back only +EV selections &rarr; size with &frac14;-Kelly. Replace <tt>data/odds.csv</tt> with real closing odds for an honest test.</font></p>
 
 <h2><font color="#FFFFFF">&#128221; LATEST PREDICTIONS vs REALITY</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="60%">
