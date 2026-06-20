@@ -129,8 +129,10 @@ def main() -> None:
 
     upcoming = _upcoming(paths, teams, params, ratings, name, gamma, n=40)
     bet = _betting(paths, preds, gamma)
+    outright = _load_outright(paths)
 
-    html = _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib)
+    html = _render(df, name, base, adv, win, preds, summary, friend_rows,
+                   upcoming, bet, calib, outright)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -148,6 +150,20 @@ def _load_odds(paths):
         for r in csv.DictReader(fh):
             out[(r["home_team_id"], r["away_team_id"])] = (
                 float(r["odds_home"]), float(r["odds_draw"]), float(r["odds_away"]))
+    return out
+
+
+def _load_outright(paths):
+    """Outright 'winner' decimal odds keyed by team_id from data/outright_odds.csv."""
+    import csv
+
+    p = paths.data_dir / "outright_odds.csv"
+    out = {}
+    if not p.exists():
+        return out
+    with p.open("r", encoding="utf-8", newline="") as fh:
+        for r in csv.DictReader(fh):
+            out[r["team_id"]] = float(r["odds_decimal"])
     return out
 
 
@@ -232,18 +248,23 @@ def _betting(paths, preds, gamma=1.0):
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib) -> str:
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
 
-    champ_rows = "".join(
-        f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
-        f'<td align="center"><b>{i+1}</b></td><td>&nbsp;{r.team}</td>'
-        f'<td align="center">{r.elo:.0f}</td>'
-        f'<td align="center"><b>{r.p_champion*100:.1f}%</b></td></tr>'
-        for i, r in enumerate(df.head(12).itertuples())
-    )
+    inv = {t: 1.0 / o for t, o in outright.items()}
+    tot = sum(inv.values()) or 1.0
+    mkt_champ = {t: inv[t] / tot for t in inv}
+    champ_rows = ""
+    for i, r in enumerate(df.head(12).itertuples()):
+        m = mkt_champ.get(r.team_id)
+        mcell = f'{m*100:.1f}%' if m is not None else '&ndash;'
+        champ_rows += (f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
+                       f'<td align="center"><b>{i+1}</b></td><td>&nbsp;{r.team}</td>'
+                       f'<td align="center">{r.elo:.0f}</td>'
+                       f'<td align="center"><b>{r.p_champion*100:.1f}%</b></td>'
+                       f'<td align="center">{mcell}</td></tr>')
 
     group_blocks = []
     for g in sorted(base):
@@ -431,9 +452,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <h2><font color="#FFFFFF">&#127942; WHO WILL WIN IT?</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="100%">
 <tr bgcolor="#000080"><th><font color="#FFFF00">#</font></th><th align="left"><font color="#FFFF00">&nbsp;Team</font></th>
-<th><font color="#FFFF00">Elo</font></th><th><font color="#FFFF00">Win%</font></th></tr>
+<th><font color="#FFFF00">Elo</font></th><th><font color="#FFFF00">Model</font></th><th><font color="#FFFF00">Bookies</font></th></tr>
 {champ_rows}
 </table>
+<p><font size="1" face="Courier New">Model vs bookies' winner market (oddschecker, 20 Jun). The model is <b>top-heavy</b> &#8212; it overrates Argentina (~31% vs ~10%) and underrates the chasing pack (Brazil, Portugal, Germany). Outright "best odds" sum to ~94%, so the de-vig is approximate.</font></p>
 </td><td width="55%">
 <h2><font color="#FFFFFF">&#128176; THE SWEEPSTAKE LEAGUE</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="100%">
