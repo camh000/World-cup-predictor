@@ -63,19 +63,31 @@ def _best_prices(event):
     return best
 
 
-def _find_keys(api_key):
-    """Return (match_key, winner_key) for the World Cup, or (None, None)."""
-    sports, _ = _get("sports", {"apiKey": api_key})
+def _select_keys(sports):
+    """Pick the FIFA World Cup (men's football) match + winner keys from /sports.
+
+    Must require ``fifa_world_cup``, NOT merely ``world_cup``: the-odds-api also
+    lists e.g. ``cricket_t20_world_cup_womens``, and matching on ``world_cup``
+    alone wrongly grabs cricket (which then yields zero 1X2 rows because cricket
+    has no Draw). Qualifier markets are excluded by the ``active`` flag during the
+    finals. ``_winner`` is the outright market; anything else is the match market.
+    """
     match_key = winner_key = None
     for s in sports:
         key = s.get("key", "")
-        if "world_cup" not in key or not s.get("active"):
+        if "fifa_world_cup" not in key or not s.get("active"):
             continue
         if key.endswith("_winner"):
             winner_key = winner_key or key
         else:
             match_key = match_key or key
     return match_key, winner_key
+
+
+def _find_keys(api_key):
+    """Return (match_key, winner_key) for the FIFA World Cup, or (None, None)."""
+    sports, _ = _get("sports", {"apiKey": api_key})  # free (0 credits)
+    return _select_keys(sports)
 
 
 def fetch_matches(api_key, key, regions, idx):
