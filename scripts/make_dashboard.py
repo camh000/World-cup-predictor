@@ -37,6 +37,37 @@ def _hits() -> int:
     return 13337 + (date.today() - date(2026, 6, 11)).days * 391
 
 
+def _favicon() -> str:
+    """A 16x16 pixel-art football as an SVG data URI (crisp, no external file)."""
+    import urllib.parse
+
+    n, c, r = 16, 7.5, 7.0
+    px = [["."] * n for _ in range(n)]
+    for y in range(n):
+        for x in range(n):
+            d = ((x - c) ** 2 + (y - c) ** 2) ** 0.5
+            if d <= r:
+                px[y][x] = "w"
+            if r - 1.3 <= d <= r:
+                px[y][x] = "k"               # black outline ring
+    for y in range(n):                        # central black pentagon (diamond blob)
+        for x in range(n):
+            if abs(x - c) + abs(y - c) <= 2.2 and px[y][x] != ".":
+                px[y][x] = "k"
+    for bx, by in [(4, 4), (11, 4), (4, 11), (11, 11), (7, 13)]:   # surrounding patches
+        for y in range(by - 1, by + 1):
+            for x in range(bx - 1, bx + 1):
+                if 0 <= x < n and 0 <= y < n and px[y][x] == "w":
+                    px[y][x] = "k"
+    rects = "".join(
+        f'<rect x="{x}" y="{y}" width="1" height="1" fill="{"#fff" if px[y][x]=="w" else "#000"}"/>'
+        for y in range(n) for x in range(n) if px[y][x] != "."
+    )
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {n} {n}" '
+           f'shape-rendering="crispEdges">{rects}</svg>')
+    return "data:image/svg+xml," + urllib.parse.quote(svg)
+
+
 def main() -> None:
     paths = Paths()
     teams = read_teams(paths.teams_csv)
@@ -76,6 +107,7 @@ def main() -> None:
 # --------------------------------------------------------------------------- #
 def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
+    fav = _favicon()
 
     champ_rows = "".join(
         f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
@@ -126,6 +158,8 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows) -> str:
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>:::: WORLD CUP 2026 PREDICT-O-MATIC 3000 ::::</title>
+<link rel="icon" href="{fav}">
+<link rel="shortcut icon" href="{fav}">
 <style>
   body {{
     background-color:#008080;
