@@ -160,8 +160,12 @@ def main() -> None:
     bet = _betting(paths, preds, gamma)
     outright = _load_outright(paths)
 
+    # Mathematical (not just probable) group fate, from results played so far.
+    played_pairs = {frozenset((m.home_team_id, m.away_team_id)) for m in group_matches}
+    clinch = _clinch_status(base, adv, played_pairs)
+
     html = _render(df, name, base, adv, win, preds, summary, friend_rows,
-                   upcoming, bet, calib, outright)
+                   upcoming, bet, calib, outright, clinch)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -300,7 +304,56 @@ def _betting(paths, preds, gamma=1.0):
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright) -> str:
+def _clinch_status(base, adv, played_pairs):
+    """Per-team group fate that is *mathematically* true, not just probable.
+
+    For each group we enumerate every remaining group result (each pairing is
+    win/draw/loss; <=81 combos) and judge on points only, worst-case for ties:
+
+      * QUALIFIED -> in *every* scenario at most one other team can reach the
+        team's points, so it is guaranteed a top-2 finish (which always advances)
+        no matter the goal-difference tiebreaks;
+      * OUT -> in *every* scenario at least two other teams finish strictly above
+        it (so top-2 is impossible) AND the simulation gives it ~no best-third
+        hope either;
+      * otherwise None -> show the simulated probability, never a false promise.
+    """
+    from itertools import combinations, product
+
+    status = {}
+    for g, stands in base.items():
+        tids = list(stands)
+        pts = {t: stands[t].points for t in tids}
+        remaining = [tuple(p) for p in combinations(tids, 2)
+                     if frozenset(p) not in played_pairs]
+        clinched = {t: True for t in tids}
+        eliminated = {t: True for t in tids}
+        for sc in product((0, 1, 2), repeat=len(remaining)):
+            fp = dict(pts)
+            for (a, b), o in zip(remaining, sc):
+                if o == 0:
+                    fp[a] += 3
+                elif o == 1:
+                    fp[a] += 1
+                    fp[b] += 1
+                else:
+                    fp[b] += 3
+            for t in tids:
+                if sum(1 for u in tids if u != t and fp[u] >= fp[t]) > 1:
+                    clinched[t] = False
+                if sum(1 for u in tids if u != t and fp[u] > fp[t]) < 2:
+                    eliminated[t] = False
+        for t in tids:
+            if clinched[t]:
+                status[t] = "QUALIFIED"
+            elif eliminated[t] and adv.get(t, 0.0) <= 0.0005:
+                status[t] = "OUT"
+            else:
+                status[t] = None
+    return status
+
+
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright, clinch) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -376,8 +429,14 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         rows = ""
         for s in table:
             a = adv[s.team_id]
-            colour = "#CCFFCC" if a >= 0.9995 else "#FFCCCC" if a <= 0.0005 else "#FFFFFF"
-            tag = "QUALIFIED!" if a >= 0.9995 else "OUT" if a <= 0.0005 else f"{a*100:.0f}%"
+            st = clinch.get(s.team_id)
+            if st == "QUALIFIED":
+                colour, tag = "#CCFFCC", "QUALIFIED!"
+            elif st == "OUT":
+                colour, tag = "#FFCCCC", "OUT"
+            else:
+                colour = "#FFFFFF"
+                tag = ">99%" if a >= 0.995 else "&lt;1%" if a <= 0.005 else f"{a*100:.0f}%"
             rows += (f'<tr bgcolor="{colour}"><td>&nbsp;{name[s.team_id]}</td>'
                      f'<td align="center">{s.points}</td><td align="center">{s.gd:+d}</td>'
                      f'<td align="center"><b>{tag}</b></td></tr>')
