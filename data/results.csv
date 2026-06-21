@@ -31,3 +31,7 @@ date,home_team_id,away_team_id,home_goals,away_goals,stage,competition,neutral
 2026-06-19,SCO,MAR,0,1,group,WC2026,true
 2026-06-20,BRA,HAI,3,0,group,WC2026,true
 2026-06-20,TUR,PAR,0,1,group,WC2026,true
+2026-06-20,NED,SWE,5,1,group,WC2026,true
+2026-06-20,GER,CIV,2,1,group,WC2026,true
+2026-06-21,ECU,CUW,0,0,group,WC2026,true
+2026-06-21,TUN,JPN,0,4,group,WC2026,true
