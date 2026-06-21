@@ -84,6 +84,7 @@ class BetResult:
 def evaluate(
     matches: Sequence[Tuple[Triple, Triple, int]],
     *,
+    bet_probs: Sequence[Triple] | None = None,
     edge_threshold: float = 0.0,
     kelly_fraction_mult: float = 0.25,
     bankroll: float = 100.0,
@@ -92,10 +93,13 @@ def evaluate(
     """Score model forecasts against market odds and backtest +EV staking.
 
     ``matches`` is a sequence of ``(model_probs, decimal_odds, outcome)`` tuples.
-    A bet is placed on the single highest-EV selection per match when its edge
-    exceeds ``edge_threshold``. Flat staking risks 1 unit per bet; the Kelly
-    strategy risks ``kelly_fraction_mult`` of full Kelly against a running
-    bankroll (default quarter-Kelly).
+    Log-loss is always scored on those ``model_probs``. The *betting* decision can
+    optionally use a different, parallel ``bet_probs`` sequence (e.g. shrunk toward
+    the market) so the disciplined staking strategy is measured without distorting
+    the accuracy comparison. A bet is placed on the single highest-EV selection per
+    match when its edge exceeds ``edge_threshold``. Flat staking risks 1 unit per
+    bet; the Kelly strategy risks ``kelly_fraction_mult`` of full Kelly against a
+    running bankroll (default quarter-Kelly).
     """
     n = len(matches)
     if n == 0:
@@ -107,14 +111,15 @@ def evaluate(
     flat_staked = flat_profit = 0.0
     bank = bankroll
 
-    for probs, odds, outcome in matches:
+    for i, (probs, odds, outcome) in enumerate(matches):
         fair = devig(odds)
         model_ll += -math.log(max(probs[outcome], eps))
         market_ll += -math.log(max(fair[outcome], eps))
         vig_sum += overround(odds)
 
-        # Pick the selection the model rates as the best-value back bet.
-        evs = [ev_per_unit(probs[k], odds[k]) for k in range(3)]
+        # Pick the selection the (optionally shrunk) probabilities rate best-value.
+        decide = bet_probs[i] if bet_probs is not None else probs
+        evs = [ev_per_unit(decide[k], odds[k]) for k in range(3)]
         k = max(range(3), key=evs.__getitem__)
         if evs[k] <= edge_threshold:
             continue
@@ -125,7 +130,7 @@ def evaluate(
         flat_staked += 1.0
         flat_profit += (odds[k] - 1.0) if won else -1.0
         # Fractional Kelly against the live bankroll.
-        stake = kelly_fraction(probs[k], odds[k]) * kelly_fraction_mult * bank
+        stake = kelly_fraction(decide[k], odds[k]) * kelly_fraction_mult * bank
         bank += (odds[k] - 1.0) * stake if won else -stake
 
     model_ll /= n

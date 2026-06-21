@@ -59,6 +59,22 @@ def test_evaluate_wins_when_model_has_real_edge():
     assert res.beats_market  # model closer to the 60/20/20 truth than the de-vigged price
 
 
+def test_evaluate_bet_probs_decouples_staking_from_scoring():
+    # Margined book (all odds < 3.0) so flat 1/3 probs have no edge anywhere.
+    probs = (0.6, 0.25, 0.15)
+    odds = (2.5, 2.9, 2.9)
+    matches = [(probs, odds, 0)] * 10
+    # Deciding on flat bet_probs -> no +EV selection -> no bets placed.
+    flat = [(1 / 3, 1 / 3, 1 / 3)] * 10
+    res = evaluate(matches, bet_probs=flat, edge_threshold=0.0)
+    assert res.n_bets == 0
+    # ... but the model itself does see an edge (home), and log-loss is scored on
+    # the model probs regardless of which probs drove the staking decision.
+    base = evaluate(matches)
+    assert base.n_bets > 0
+    assert abs(res.model_log_loss - base.model_log_loss) < 1e-12
+
+
 def test_evaluate_empty():
     res = evaluate([])
     assert res.n_matches == 0 and res.n_bets == 0

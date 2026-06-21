@@ -25,6 +25,14 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "index.html"   # repo root so Vercel/zero-config static serves it at "/"
 N_SIMS = 20000
 
+# Honest bet filter: don't act on noise. Shrink the model toward the market (the
+# best available estimate) and only flag a "value" bet when a material edge
+# survives. Applied to both the live value list and the realized scoreboard.
+MARKET_SHRINK = 0.65    # 0 = pure model, 1 = pure market
+MIN_EDGE = 0.10         # require >= 10% expected edge after shrinking
+OUTRIGHT_MIN_EDGE = 0.20      # outright markets are noisier; demand a bigger edge
+OUTRIGHT_MIN_MODEL_PROB = 0.03  # ignore longshot "value" (0.5% vs 0.1% at 1000/1 is noise)
+
 
 def _load_friends():
     spec = importlib.util.spec_from_file_location("sweepstakes", Path(__file__).with_name("sweepstakes.py"))
@@ -198,7 +206,7 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
     import csv
     import numpy as np
     from wcpredictor.betting import devig, ev_per_unit
-    from wcpredictor.calibration import sharpen
+    from wcpredictor.calibration import blend, sharpen
     from wcpredictor.data_io import HOST_TEAM_IDS, _norm_name, build_name_index
     from wcpredictor.history import forecast
     from wcpredictor.poisson import dixon_coles_matrix
@@ -246,17 +254,27 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
                "odds": None, "mkt": None, "sel": None, "edge": None}
         odds = odds_map.get((h, a))
         if odds:
-            evs = [ev_per_unit(probs[k], odds[k]) for k in range(3)]
+            mkt = devig(odds)
+            # Bet on the model shrunk toward the market, not the raw model: this
+            # filters the small, noisy "edges" the model invents on most games.
+            decide = blend(probs, mkt, MARKET_SHRINK)
+            evs = [ev_per_unit(decide[k], odds[k]) for k in range(3)]
             sel = max(range(3), key=evs.__getitem__)
-            row.update(odds=odds, mkt=devig(odds), sel=sel, edge=evs[sel])
+            row.update(odds=odds, mkt=mkt, sel=sel, edge=evs[sel])
         out.append(row)
     return out
 
 
 def _betting(paths, preds, gamma=1.0):
-    """Join settled predictions to bookmaker odds (data/odds.csv) and backtest."""
+    """Join settled predictions to bookmaker odds (data/odds.csv) and backtest.
+
+    Accuracy (log-loss) is scored on the pure model; the staking decision uses the
+    same disciplined filter as the live list — shrink toward the market, require a
+    material edge — so the scoreboard measures the strategy we would actually run.
+    """
     import csv
-    from wcpredictor.calibration import sharpen
+    from wcpredictor.betting import devig
+    from wcpredictor.calibration import blend, sharpen
 
     odds_path = paths.data_dir / "odds.csv"
     if not odds_path.exists():
@@ -267,13 +285,16 @@ def _betting(paths, preds, gamma=1.0):
             idx[(r["date"], r["home_team_id"], r["away_team_id"])] = (
                 float(r["odds_home"]), float(r["odds_draw"]), float(r["odds_away"]))
     om = {"home": 0, "draw": 1, "away": 2}
-    matches = []
+    matches, bet_probs = [], []
     for r in preds:
         k = (r["date"], r["home_team_id"], r["away_team_id"])
         if k in idx and r["actual_outcome"] in om:
             probs = sharpen((float(r["p_home"]), float(r["p_draw"]), float(r["p_away"])), gamma)
             matches.append((probs, idx[k], om[r["actual_outcome"]]))
-    return evaluate(matches) if matches else None
+            bet_probs.append(blend(probs, devig(idx[k]), MARKET_SHRINK))
+    if not matches:
+        return None
+    return evaluate(matches, bet_probs=bet_probs, edge_threshold=MIN_EDGE)
 
 
 # --------------------------------------------------------------------------- #
@@ -287,6 +308,39 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
     from wcpredictor.betting import devig_market
     _ids = list(outright)
     mkt_champ = dict(zip(_ids, devig_market([outright[t] for t in _ids])))
+
+    # Softer market: outright-winner value. Shrink the model's champion prob toward
+    # the (de-vigged) market, then back the raw outright price when a big edge
+    # survives. Outrights are less efficient than 1X2, so we demand a larger edge.
+    champ_model = {r.team_id: float(r.p_champion) for r in df.itertuples()}
+    outright_value = []
+    for t, o in outright.items():
+        mp, mk = champ_model.get(t, 0.0), mkt_champ.get(t, 0.0)
+        if mp < OUTRIGHT_MIN_MODEL_PROB:   # skip longshot noise
+            continue
+        edge = ((1.0 - MARKET_SHRINK) * mp + MARKET_SHRINK * mk) * o - 1.0
+        if edge > OUTRIGHT_MIN_EDGE:
+            outright_value.append((t, o, mp, mk, edge))
+    outright_value.sort(key=lambda x: -x[4])
+    if outright_value:
+        _orows = "".join(
+            f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
+            f'<td>&nbsp;{name.get(t, t)}</td><td align="center">{o:.0f}</td>'
+            f'<td align="center">{mp*100:.1f}%</td><td align="center">{mk*100:.1f}%</td>'
+            f'<td align="center"><b><font color="#008000">+{edge*100:.0f}%</font></b></td></tr>'
+            for i, (t, o, mp, mk, edge) in enumerate(outright_value[:6]))
+        outright_html = (
+            '<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="70%">'
+            '<tr bgcolor="#006400"><th align="left"><font color="#FFFF00">&nbsp;Team to win it</font></th>'
+            '<th><font color="#FFFF00">Odds</font></th><th><font color="#FFFF00">Model</font></th>'
+            '<th><font color="#FFFF00">Market</font></th><th><font color="#FFFF00">Edge</font></th></tr>'
+            f'{_orows}</table>'
+            f'<p><font size="1" face="Courier New">Outright winner market &#8212; less efficient than match '
+            f'odds, so the model&rsquo;s remaining top-heaviness can masquerade as value here too. Same health '
+            f'warning applies.</font></p>')
+    else:
+        outright_html = (f'<p>No outright-winner bet clears the &ge;{int(OUTRIGHT_MIN_EDGE*100)}% edge bar '
+                         f'after shrinking toward the market.</p>')
 
     # Data-driven champion caption: compare the model's favourite to the market so
     # the text can never go stale against the table above it.
@@ -360,7 +414,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         pick = name[r["h"]] if ph >= max(pd, pa) else (name[r["a"]] if pa >= pd else "Draw")
         if r["odds"] is None:
             bet_cell = '<font color="#888888">no odds</font>'
-        elif r["edge"] > 0:
+        elif r["edge"] > MIN_EDGE:
             bet_cell = f'<font color="#B8860B">{_sel_label(r, r["sel"])} +{r["edge"]*100:.0f}%</font>'
         else:
             bet_cell = '<font color="#888888">agrees</font>'
@@ -378,29 +432,24 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 
     gamma, ll_raw, ll_cal = calib
     priced = [r for r in upcoming if r["odds"] is not None]
-    value = sorted([r for r in priced if r["edge"] > 0], key=lambda r: -r["edge"])
+    # Raw (unfiltered) +EV count, for the "before/after the filter" contrast.
+    n_raw = sum(1 for r in priced
+                if max(ev_per_unit(r["p"][k], r["odds"][k]) for k in range(3)) > 0)
+    # Filtered "value": edge is already computed on the market-shrunk model in
+    # _upcoming; here we keep only those clearing the minimum-edge bar.
+    value = sorted([r for r in priced if r["edge"] > MIN_EDGE], key=lambda r: -r["edge"])
     n_priced, n_value = len(priced), len(value)
-    # Robustness: how many "edges" survive trusting the market 75%?
-    robust = 0
-    for r in priced:
-        pb = blend(r["p"], devig(r["odds"]), 0.75)
-        if max(ev_per_unit(pb[k], r["odds"][k]) for k in range(3)) > 0:
-            robust += 1
-    frac = (n_value / n_priced) if n_priced else 0.0
     calib_note = (
-        f'<b><font color="#CC0000">&#128680; HEALTH CHECK &mdash; read before betting your house:</font></b> '
-        f'the model still claims value on <b>{n_value} of {n_priced}</b> priced games ({frac*100:.0f}%), and '
-        f'<b>{robust}</b> of those survive even after <b>trusting the market 75%</b>. That is the model '
-        f'<i>disagreeing</i> with the bookies, not a goldmine &mdash; it is an Elo-only estimator and history '
-        f'says these gaps are mostly its own error. Two structural fixes are now in: a non-linear '
-        f'<b>spread compression</b> that removed the old elite over-confidence (it no longer rates a top team '
-        f'at ~92% in a mismatch), lifting real replay skill to a <b>{summary.log_loss:.3f}</b> log-loss; and '
-        f'<b>tournament rating-uncertainty</b> that pulled the outright favourite from a silly ~31% down to '
-        f'<b>{fav_model*100:.0f}%</b>, into the bookies&rsquo; band. A temperature on the {len(preds)} settled '
-        f'games now fits &gamma;={gamma:.2f} (close to 1 &mdash; the raw model needs almost no sharpening). '
-        f'Bottom line: the headline distortions are fixed, but the table below is still best read as '
-        f'<i>"where the model most disagrees with the bookies"</i> (i.e. where it is most likely wrong), '
-        f'not a bet slip.')
+        f'<b><font color="#CC0000">&#128680; HEALTH CHECK:</font></b> the raw model "finds value" on '
+        f'<b>{n_raw} of {n_priced}</b> priced games &mdash; a classic over-eager-model tell, not a goldmine. '
+        f'The honest filter (shrink <b>{int(MARKET_SHRINK*100)}%</b> toward the market, then demand a '
+        f'<b>&ge;{int(MIN_EDGE*100)}%</b> edge) cuts that to <b>{n_value}</b>: the biggest, most defensible '
+        f'disagreements. The calibration fixes are in &mdash; spread compression removed the old elite '
+        f'over-confidence (replay log-loss <b>{summary.log_loss:.3f}</b>), tournament uncertainty pulled the '
+        f'outright favourite from ~31% to <b>{fav_model*100:.0f}%</b>, and a temperature now fits '
+        f'&gamma;={gamma:.2f} (&asymp;1). But it is still an Elo-only estimator, so treat the list as '
+        f'<i>"where it disagrees with the bookies"</i>, and trust only the realized scoreboard below over '
+        f'a real, larger sample.')
     val_rows = ""
     for r in value[:12]:
         mh, md, ma = r["mkt"]
@@ -414,8 +463,9 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
                      f'<td align="center">{mkt_pct*100:.0f}%</td>'
                      f'<td align="center"><b><font color="#008000">+{r["edge"]*100:.0f}%</font></b></td></tr>')
     if not val_rows:
-        val_rows = ('<tr bgcolor="#FFFFFF"><td colspan="7">&nbsp;No +EV bets found across '
-                    f'{len(priced)} priced fixtures &#8212; the model agrees with the bookies.</td></tr>')
+        val_rows = ('<tr bgcolor="#FFFFFF"><td colspan="7">&nbsp;After the filter, no bet clears the '
+                    f'&ge;{int(MIN_EDGE*100)}% edge bar across {len(priced)} priced fixtures &#8212; the '
+                    'model broadly agrees with the bookies.</td></tr>')
 
     if bet is None:
         bet_html = ('<tr bgcolor="#FFFFFF"><td colspan="2">&nbsp;No <i>priced</i> game has finished yet. '
@@ -550,7 +600,10 @@ these are overwhelmingly the model being wrong, not free money.</p>
 {val_rows}
 </table>
 <p>{calib_note}</p>
-<p><font size="1" face="Courier New">&#9888; "Edge" is the model's <i>claimed</i> advantage, not a guarantee &#8212; it is only real if it holds up over many games with positive closing-line value. Showing the top 12 by edge. Stake responsibly; this is for fun, not financial advice.</font></p>
+<p><font size="1" face="Courier New">&#9888; "Edge" is the model's <i>claimed</i> advantage after shrinking toward the market, not a guarantee &#8212; it is only real if it holds up over many games with positive closing-line value. Showing the top 12 by edge. Stake responsibly; this is for fun, not financial advice.</font></p>
+
+<h3><font color="#FFFFFF">&#127942; Softer market: outright winner value</font></h3>
+{outright_html}
 
 <h3><font color="#FFFFFF">&#128202; Realized scoreboard (settled priced games)</font></h3>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
