@@ -9,12 +9,14 @@ Credit-thrifty by design (free tier = 500/month):
   * we never overwrite a CSV with an empty result, and we print the remaining
     credit balance returned by the API after every call.
 
-Set ODDS_API_KEY (a free key from the-odds-api.com). Without it this no-ops, so
-it is safe to wire into CI. Usage:
+By default it pulls only bet365's prices (the-odds-api ``bookmakers=bet365``,
+which costs the same as one region). Set ODDS_API_KEY (a free key from
+the-odds-api.com). Without it this no-ops, so it is safe to wire into CI. Usage:
 
-    python scripts/fetch_odds.py                # match + outright (2 credits)
-    python scripts/fetch_odds.py --skip-outrights   # match only (1 credit)
-    python scripts/fetch_odds.py --regions uk,eu    # (costs 1 credit PER region)
+    python scripts/fetch_odds.py                     # bet365 match + outright (2 credits)
+    python scripts/fetch_odds.py --skip-outrights    # bet365 match only (1 credit)
+    python scripts/fetch_odds.py --bookmaker ''      # best-odds across --regions instead
+    python scripts/fetch_odds.py --bookmaker pinnacle  # a different single book
 """
 
 from __future__ import annotations
@@ -51,10 +53,16 @@ def _get(path: str, params: dict):
         return json.loads(resp.read().decode()), remaining
 
 
-def _best_prices(event):
-    """Best (max) decimal price per outcome name across all bookmakers in an event."""
+def _best_prices(event, bookmaker=None):
+    """Best decimal price per outcome name across an event's bookmakers.
+
+    If ``bookmaker`` is given, only that bookmaker's prices are considered (so the
+    "best" is simply its quote); otherwise the max across all books is taken.
+    """
     best = {}
     for bk in event.get("bookmakers", []):
+        if bookmaker and bk.get("key") != bookmaker:
+            continue
         for mkt in bk.get("markets", []):
             for oc in mkt.get("outcomes", []):
                 nm, price = oc.get("name"), oc.get("price")
@@ -90,9 +98,9 @@ def _find_keys(api_key):
     return _select_keys(sports)
 
 
-def fetch_matches(api_key, key, regions, idx):
+def fetch_matches(api_key, key, scope, idx, bookmaker=None):
     events, rem = _get(f"sports/{key}/odds",
-                       {"apiKey": api_key, "regions": regions, "markets": "h2h",
+                       {"apiKey": api_key, **scope, "markets": "h2h",
                         "oddsFormat": "decimal", "dateFormat": "iso"})
     rows = []
     for ev in events:
@@ -100,7 +108,7 @@ def fetch_matches(api_key, key, regions, idx):
         a = idx.get(_norm_name(ev.get("away_team", "")))
         if not h or not a:
             continue
-        best = _best_prices(ev)
+        best = _best_prices(ev, bookmaker)
         oh = best.get(ev["home_team"])
         oa = best.get(ev["away_team"])
         od = best.get("Draw")
@@ -112,14 +120,14 @@ def fetch_matches(api_key, key, regions, idx):
     return rows, rem, len(events)
 
 
-def fetch_outrights(api_key, key, regions, idx):
+def fetch_outrights(api_key, key, scope, idx, bookmaker=None):
     events, rem = _get(f"sports/{key}/odds",
-                       {"apiKey": api_key, "regions": regions, "markets": "outrights",
+                       {"apiKey": api_key, **scope, "markets": "outrights",
                         "oddsFormat": "decimal"})
     best = {}
     seen_names = set()
     for ev in events:
-        for team, price in _best_prices(ev).items():
+        for team, price in _best_prices(ev, bookmaker).items():
             seen_names.add(team)
             tid = idx.get(_norm_name(team))
             if tid and price > 0:
@@ -191,10 +199,19 @@ def _load_dotenv(path: Path = ROOT / ".env") -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--regions", default="uk", help="comma list; costs 1 credit PER region")
+    ap.add_argument("--bookmaker", default="bet365",
+                    help="only pull this bookmaker's odds (default bet365); "
+                         "pass --bookmaker '' for best-odds across --regions")
+    ap.add_argument("--regions", default="uk",
+                    help="comma list, used only when --bookmaker is empty; 1 credit PER region")
     ap.add_argument("--skip-outrights", action="store_true", help="match odds only (1 credit)")
     ap.add_argument("--skip-matches", action="store_true", help="outright odds only (1 credit)")
     args = ap.parse_args()
+
+    # the-odds-api takes EITHER a bookmakers filter OR regions. Selecting a single
+    # bookmaker costs the same as one region (1 credit per market).
+    bookmaker = args.bookmaker or None
+    scope = {"bookmakers": bookmaker} if bookmaker else {"regions": args.regions}
 
     _load_dotenv()
     api_key = os.environ.get("ODDS_API_KEY")
@@ -218,7 +235,7 @@ def main() -> None:
             print("No active World Cup match market found (kept existing odds).")
         else:
             try:
-                rows, remaining, seen = fetch_matches(api_key, match_key, args.regions, idx)
+                rows, remaining, seen = fetch_matches(api_key, match_key, scope, idx, bookmaker)
             except _FETCH_ERRORS as e:
                 print(f"Match odds fetch failed ({_err(e)}); kept existing data/odds.csv.")
                 rows, seen = [], 0
@@ -232,7 +249,7 @@ def main() -> None:
                 _append(DATA / "odds_history.csv", ["fetched_at"] + header,
                         [[fetched_at] + r for r in rows])
                 print(f"Wrote data/odds.csv ({len(rows)}/{seen} matches) from '{match_key}' "
-                      f"+ snapshot -> data/odds_history.csv.")
+                      f"[{bookmaker or args.regions}] + snapshot -> data/odds_history.csv.")
             else:
                 print("No match odds returned (kept existing data/odds.csv).")
 
@@ -241,7 +258,7 @@ def main() -> None:
             print("No active World Cup winner market found (kept existing outrights).")
         else:
             try:
-                rows, remaining, seen = fetch_outrights(api_key, winner_key, args.regions, idx)
+                rows, remaining, seen = fetch_outrights(api_key, winner_key, scope, idx, bookmaker)
             except _FETCH_ERRORS as e:
                 print(f"Outright odds fetch failed ({_err(e)}); kept existing outright_odds.csv.")
                 rows, seen = [], 0
@@ -254,7 +271,7 @@ def main() -> None:
                 _append(DATA / "outright_history.csv", ["fetched_at"] + header,
                         [[fetched_at] + r for r in rows])
                 print(f"Wrote data/outright_odds.csv ({len(rows)}/{seen} teams) from '{winner_key}' "
-                      f"+ snapshot -> data/outright_history.csv.")
+                      f"[{bookmaker or args.regions}] + snapshot -> data/outright_history.csv.")
             else:
                 print("No outright odds returned (kept existing outright_odds.csv).")
 
