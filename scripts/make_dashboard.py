@@ -624,6 +624,11 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 </style></head>
 <body bgcolor="#008080" text="#000000" link="#0000EE" vlink="#551A8B">
 <center>
+<table border="2" cellpadding="4" cellspacing="0" width="90%" bgcolor="#000000">
+<tr><td align="center"><font face="Courier New" color="#00FF00" size="2">
+&laquo;&laquo; THE SPORTSBALL PREDICT-O-MATIC WEBRING &raquo;&raquo;<br>
+&#9664; PREV &nbsp;|&nbsp; <b>[ &#9917; World Cup ]</b> &nbsp;|&nbsp; <a href="f1.html">&#127937; Formula 1</a> &nbsp;|&nbsp; NEXT &#9654;
+</font></td></tr></table>
 <marquee behavior="alternate" scrollamount="6"><font size="6" color="#FFFF00" face="Impact">
 &#9917; WORLD CUP 2026 PREDICT-O-MATIC 3000 &#9917;</font></marquee>
 

@@ -1,0 +1,155 @@
+Track,Position,No,Driver,Team,Starting Grid,Laps,Time/Retired,Points,Set Fastest Lap,Fastest Lap Time
+Australia,1,63,George Russell,Mercedes,1,58,1:23:06.801,25,No,1:22.670
+Australia,2,12,Kimi Antonelli,Mercedes,2,58,+2.974,18,No,1:22.417
+Australia,3,16,Charles Leclerc,Ferrari,4,58,+15.519,15,No,1:22.579
+Australia,4,44,Lewis Hamilton,Ferrari,7,58,+16.144,12,No,1:22.423
+Australia,5,1,Lando Norris,McLaren Mercedes,6,58,+51.741,10,No,1:22.358
+Australia,6,3,Max Verstappen,Red Bull Racing Red Bull Ford,20,58,+54.617,8,Yes,1:22.091
+Australia,7,87,Oliver Bearman,Haas Ferrari,12,57,+1 lap,6,No,1:24.020
+Australia,8,41,Arvid Lindblad,Racing Bulls Red Bull Ford,9,57,+1 lap,4,No,1:24.182
+Australia,9,5,Gabriel Bortoleto,Audi,10,57,+1 lap,2,No,1:23.257
+Australia,10,10,Pierre Gasly,Alpine Mercedes,14,57,+1 lap,1,No,1:24.486
+Australia,11,31,Esteban Ocon,Haas Ferrari,13,57,+1 lap,0,No,1:24.424
+Australia,12,23,Alexander Albon,Williams Mercedes,15,57,+1 lap,0,No,1:24.375
+Australia,13,30,Liam Lawson,Racing Bulls Red Bull Ford,8,57,+1 lap,0,No,1:23.783
+Australia,14,43,Franco Colapinto,Alpine Mercedes,16,56,+2 laps,0,No,1:22.926
+Australia,15,55,Carlos Sainz,Williams Mercedes,21,56,+2 laps,0,No,1:23.590
+Australia,16,11,Sergio Perez,Cadillac Ferrari,18,55,+3 laps,0,No,1:26.070
+Australia,NC,18,Lance Stroll,Aston Martin Honda,22,43,+15 laps,0,No,1:25.410
+Australia,NC,14,Fernando Alonso,Aston Martin Honda,17,21,DNF,0,No,1:25.713
+Australia,NC,77,Valtteri Bottas,Cadillac Ferrari,19,15,DNF,0,No,1:27.364
+Australia,NC,6,Isack Hadjar,Red Bull Racing Red Bull Ford,3,10,DNF,0,No,1:25.239
+Australia,NC,81,Oscar Piastri,McLaren Mercedes,5,0,DNS,0,No,
+Australia,NC,27,Nico Hulkenberg,Audi,11,0,DNS,0,No,
+China,1,12,Kimi Antonelli,Mercedes,1,56,1:33:15.607,25,Yes,1:35.275
+China,2,63,George Russell,Mercedes,2,56,+5.515,18,No,1:35.400
+China,3,44,Lewis Hamilton,Ferrari,3,56,+25.267,15,No,1:36.092
+China,4,16,Charles Leclerc,Ferrari,4,56,+28.894,12,No,1:36.011
+China,5,87,Oliver Bearman,Haas Ferrari,10,56,+57.268,10,No,1:36.429
+China,6,10,Pierre Gasly,Alpine Mercedes,7,56,+59.647,8,No,1:36.505
+China,7,30,Liam Lawson,Racing Bulls Red Bull Ford,14,56,+80.588,6,No,1:37.096
+China,8,6,Isack Hadjar,Red Bull Racing Red Bull Ford,9,56,+87.247,4,No,1:37.311
+China,9,55,Carlos Sainz,Williams Mercedes,17,55,+1 lap,2,No,1:37.981
+China,10,43,Franco Colapinto,Alpine Mercedes,12,55,+1 lap,1,No,1:36.783
+China,11,27,Nico Hulkenberg,Audi,11,55,+1 lap,0,No,1:36.180
+China,12,41,Arvid Lindblad,Racing Bulls Red Bull Ford,15,55,+1 lap,0,No,1:36.099
+China,13,77,Valtteri Bottas,Cadillac Ferrari,19,55,+1 lap,0,No,1:38.393
+China,14,31,Esteban Ocon,Haas Ferrari,13,55,+1 lap,0,No,1:35.964
+China,15,11,Sergio Perez,Cadillac Ferrari,21,55,+1 lap,0,No,1:38.523
+China,NC,3,Max Verstappen,Red Bull Racing Red Bull Ford,8,45,DNF,0,No,1:37.046
+China,NC,14,Fernando Alonso,Aston Martin Honda,18,32,DNF,0,No,1:39.721
+China,NC,18,Lance Stroll,Aston Martin Honda,20,9,DNF,0,No,1:40.883
+China,NC,81,Oscar Piastri,McLaren Mercedes,5,0,DNS,0,No,
+China,NC,1,Lando Norris,McLaren Mercedes,6,0,DNS,0,No,
+China,NC,5,Gabriel Bortoleto,Audi,16,0,DNS,0,No,
+China,NC,23,Alexander Albon,Williams Mercedes,22,0,DNS,0,No,
+Japan,1,12,Kimi Antonelli,Mercedes,1,53,1:28:03.403,25,Yes,1:32.432
+Japan,2,81,Oscar Piastri,McLaren Mercedes,3,53,+13.722,18,No,1:32.996
+Japan,3,16,Charles Leclerc,Ferrari,4,53,+15.270,15,No,1:32.634
+Japan,4,63,George Russell,Mercedes,2,53,+15.754,12,No,1:32.549
+Japan,5,1,Lando Norris,McLaren Mercedes,5,53,+23.479,10,No,1:33.208
+Japan,6,44,Lewis Hamilton,Ferrari,6,53,+25.037,8,No,1:32.777
+Japan,7,10,Pierre Gasly,Alpine Mercedes,7,53,+32.340,6,No,1:33.691
+Japan,8,3,Max Verstappen,Red Bull Racing Red Bull Ford,11,53,+32.677,4,No,1:33.552
+Japan,9,30,Liam Lawson,Racing Bulls Red Bull Ford,14,53,+50.180,2,No,1:34.230
+Japan,10,31,Esteban Ocon,Haas Ferrari,12,53,+51.216,1,No,1:34.256
+Japan,11,27,Nico Hulkenberg,Audi,13,53,+52.280,0,No,1:33.732
+Japan,12,6,Isack Hadjar,Red Bull Racing Red Bull Ford,8,53,+56.154,0,No,1:33.837
+Japan,13,5,Gabriel Bortoleto,Audi,9,53,+59.078,0,No,1:34.164
+Japan,14,41,Arvid Lindblad,Racing Bulls Red Bull Ford,10,53,+59.848,0,No,1:34.314
+Japan,15,55,Carlos Sainz,Williams Mercedes,16,53,+65.008,0,No,1:34.514
+Japan,16,43,Franco Colapinto,Alpine Mercedes,15,53,+65.773,0,No,1:34.512
+Japan,17,11,Sergio Perez,Cadillac Ferrari,19,53,+92.453,0,No,1:35.637
+Japan,18,14,Fernando Alonso,Aston Martin Honda,21,52,+1 lap,0,No,1:36.221
+Japan,19,77,Valtteri Bottas,Cadillac Ferrari,20,52,+1 lap,0,No,1:36.269
+Japan,20,23,Alexander Albon,Williams Mercedes,17,51,+2 laps,0,No,1:33.427
+Japan,NC,18,Lance Stroll,Aston Martin Honda,22,30,DNF,0,No,1:37.217
+Japan,NC,87,Oliver Bearman,Haas Ferrari,18,20,DNF,0,No,1:35.604
+Miami,1,12,Kimi Antonelli,Mercedes,1,57,1:33:19.273,25,No,1:31.968
+Miami,2,1,Lando Norris,McLaren Mercedes,4,57,+3.264,18,Yes,1:31.869
+Miami,3,81,Oscar Piastri,McLaren Mercedes,7,57,+27.092,15,No,1:31.949
+Miami,4,63,George Russell,Mercedes,5,57,+43.051,12,No,1:32.446
+Miami,5,3,Max Verstappen,Red Bull Racing Red Bull Ford,2,57,+48.949,10,No,1:33.110
+Miami,6,44,Lewis Hamilton,Ferrari,6,57,+53.753,8,No,1:32.676
+Miami,7,43,Franco Colapinto,Alpine Mercedes,8,57,+61.871,6,No,1:33.035
+Miami,8,16,Charles Leclerc,Ferrari,3,57,+64.245,4,No,1:32.515
+Miami,9,55,Carlos Sainz,Williams Mercedes,13,57,+82.072,2,No,1:33.026
+Miami,10,23,Alexander Albon,Williams Mercedes,15,57,+90.972,1,No,1:33.784
+Miami,11,87,Oliver Bearman,Haas Ferrari,12,56,+1 lap,0,No,1:33.744
+Miami,12,5,Gabriel Bortoleto,Audi,21,56,+1 lap,0,No,1:33.500
+Miami,13,31,Esteban Ocon,Haas Ferrari,14,56,+1 lap,0,No,1:33.712
+Miami,14,41,Arvid Lindblad,Racing Bulls Red Bull Ford,16,56,+1 lap,0,No,1:34.058
+Miami,15,14,Fernando Alonso,Aston Martin Honda,17,56,+1 lap,0,No,1:34.594
+Miami,16,11,Sergio Perez,Cadillac Ferrari,20,56,+1 lap,0,No,1:34.895
+Miami,17,18,Lance Stroll,Aston Martin Honda,18,56,+1 lap,0,No,1:34.716
+Miami,18,77,Valtteri Bottas,Cadillac Ferrari,19,55,+2 laps,0,No,1:36.080
+Miami,NC,27,Nico Hulkenberg,Audi,10,7,DNF,0,No,1:34.523
+Miami,NC,30,Liam Lawson,Racing Bulls Red Bull Ford,11,6,DNF,0,No,1:34.814
+Miami,NC,10,Pierre Gasly,Alpine Mercedes,9,4,DNF,0,No,1:34.856
+Miami,NC,6,Isack Hadjar,Red Bull Racing Red Bull Ford,22,4,DNF,0,No,1:34.833
+Canada,1,12,Kimi Antonelli,Mercedes,2,68,1:28:15.758,25,Yes,1:14.210
+Canada,2,44,Lewis Hamilton,Ferrari,5,68,+10.768,18,No,1:14.573
+Canada,3,3,Max Verstappen,Red Bull Racing Red Bull Ford,6,68,+11.276,15,No,1:14.398
+Canada,4,16,Charles Leclerc,Ferrari,8,68,+44.151,12,No,1:15.297
+Canada,5,6,Isack Hadjar,Red Bull Racing Red Bull Ford,7,67,+1 lap,10,No,1:14.578
+Canada,6,43,Franco Colapinto,Alpine Mercedes,10,67,+1 lap,8,No,1:15.462
+Canada,7,30,Liam Lawson,Racing Bulls Red Bull Ford,12,67,+1 lap,6,No,1:15.604
+Canada,8,10,Pierre Gasly,Alpine Mercedes,14,67,+1 lap,4,No,1:15.390
+Canada,9,55,Carlos Sainz,Williams Mercedes,15,67,+1 lap,2,No,1:15.852
+Canada,10,87,Oliver Bearman,Haas Ferrari,16,67,+1 lap,1,No,1:16.002
+Canada,11,81,Oscar Piastri,McLaren Mercedes,4,66,+2 laps,0,No,1:15.456
+Canada,12,27,Nico Hulkenberg,Audi,11,66,+2 laps,0,No,1:16.275
+Canada,13,5,Gabriel Bortoleto,Audi,13,66,+2 laps,0,No,1:16.221
+Canada,14,31,Esteban Ocon,Haas Ferrari,17,66,+2 laps,0,No,1:16.577
+Canada,15,18,Lance Stroll,Aston Martin Honda,22,64,+4 laps,0,No,1:18.721
+Canada,16,77,Valtteri Bottas,Cadillac Ferrari,21,64,+4 laps,0,No,1:17.725
+Canada,NC,11,Sergio Perez,Cadillac Ferrari,20,39,DNF,0,No,1:16.915
+Canada,NC,1,Lando Norris,McLaren Mercedes,3,38,DNF,0,No,1:15.845
+Canada,NC,63,George Russell,Mercedes,1,29,DNF,0,No,1:15.477
+Canada,NC,14,Fernando Alonso,Aston Martin Honda,19,23,DNF,0,No,1:19.635
+Canada,NC,23,Alexander Albon,Williams Mercedes,18,11,DNF,0,No,1:17.221
+Canada,NC,41,Arvid Lindblad,Racing Bulls Red Bull Ford,9,0,DNS,0,No,
+Monaco,1,12,Kimi Antonelli,Mercedes,1,78,2:23:31.243,25,Yes,1:13.481
+Monaco,2,44,Lewis Hamilton,Ferrari,3,78,+6.271,18,No,1:14.643
+Monaco,3,10,Pierre Gasly,Alpine Mercedes,9,78,+20.369,15,No,1:15.497
+Monaco,4,6,Isack Hadjar,Red Bull Racing Red Bull Ford,5,78,+23.394,12,No,1:15.669
+Monaco,5,81,Oscar Piastri,McLaren Mercedes,7,78,+24.261,10,No,1:15.816
+Monaco,6,30,Liam Lawson,Racing Bulls Red Bull Ford,10,78,+26.553,8,No,1:15.754
+Monaco,7,41,Arvid Lindblad,Racing Bulls Red Bull Ford,15,78,+29.010,6,No,1:15.908
+Monaco,8,23,Alexander Albon,Williams Mercedes,11,78,+33.413,4,No,1:16.393
+Monaco,9,31,Esteban Ocon,Haas Ferrari,17,78,+37.140,2,No,1:16.914
+Monaco,10,14,Fernando Alonso,Aston Martin Honda,21,78,+41.899,1,No,1:17.120
+Monaco,11,5,Gabriel Bortoleto,Audi,16,78,+42.748,0,No,1:16.803
+Monaco,12,63,George Russell,Mercedes,6,78,+43.353,0,No,1:15.773
+Monaco,13,27,Nico Hulkenberg,Audi,13,78,+44.102,0,No,1:16.332
+Monaco,14,43,Franco Colapinto,Alpine Mercedes,14,78,+48.964,0,No,1:16.316
+Monaco,15,11,Sergio Perez,Cadillac Ferrari,18,78,+49.153,0,No,1:16.891
+Monaco,16,55,Carlos Sainz,Williams Mercedes,12,70,DNF,0,No,1:18.022
+Monaco,NC,16,Charles Leclerc,Ferrari,4,64,DNF,0,No,1:15.964
+Monaco,NC,18,Lance Stroll,Aston Martin Honda,22,56,DNF,0,No,1:18.845
+Monaco,NC,1,Lando Norris,McLaren Mercedes,8,43,DNF,0,No,1:17.670
+Monaco,NC,87,Oliver Bearman,Haas Ferrari,19,27,DNF,0,No,1:18.475
+Monaco,NC,77,Valtteri Bottas,Cadillac Ferrari,20,15,DNF,0,No,1:20.494
+Monaco,NC,3,Max Verstappen,Red Bull Racing Red Bull Ford,2,0,DNF,0,No,
+Barcelona-Catalunya,1,44,Lewis Hamilton,Ferrari,2,66,1:32:28.105,25,Yes,1:20.122
+Barcelona-Catalunya,2,63,George Russell,Mercedes,1,66,+19.561,18,No,1:20.640
+Barcelona-Catalunya,3,1,Lando Norris,McLaren Mercedes,4,66,+23.719,15,No,1:20.232
+Barcelona-Catalunya,4,3,Max Verstappen,Red Bull Racing Red Bull Ford,5,66,+40.497,12,No,1:20.230
+Barcelona-Catalunya,5,81,Oscar Piastri,McLaren Mercedes,7,66,+58.661,10,No,1:20.835
+Barcelona-Catalunya,6,6,Isack Hadjar,Red Bull Racing Red Bull Ford,6,65,+1 lap,8,No,1:20.150
+Barcelona-Catalunya,7,10,Pierre Gasly,Alpine Renault,14,65,+1 lap,6,No,1:21.960
+Barcelona-Catalunya,8,30,Liam Lawson,Racing Bulls Red Bull Ford,8,65,+1 lap,4,No,1:22.691
+Barcelona-Catalunya,9,41,Arvid Lindblad,Racing Bulls Red Bull Ford,11,65,+1 lap,2,No,1:21.914
+Barcelona-Catalunya,10,43,Franco Colapinto,Alpine Mercedes,13,65,+1 lap,1,No,1:22.449
+Barcelona-Catalunya,11,5,Gabriel Bortoleto,Audi,12,64,+2 laps,0,No,1:21.446
+Barcelona-Catalunya,12,55,Carlos Sainz,Williams Mercedes,16,64,+2 laps,0,No,1:22.061
+Barcelona-Catalunya,13,31,Esteban Ocon,Haas Ferrari,17,64,+2 laps,0,No,1:21.643
+Barcelona-Catalunya,14,11,Sergio Perez,Cadillac Ferrari,19,63,+3 laps,0,No,1:22.820
+Barcelona-Catalunya,15,16,Charles Leclerc,Ferrari,10,62,DNF,0,No,1:20.379
+Barcelona-Catalunya,16,12,Kimi Antonelli,Mercedes,3,61,DNF,0,No,1:20.704
+Barcelona-Catalunya,17,87,Oliver Bearman,Haas Ferrari,15,60,DNF,0,No,1:22.419
+Barcelona-Catalunya,NC,23,Alexander Albon,Williams Mercedes,18,55,+11 laps,0,No,1:21.744
+Barcelona-Catalunya,NC,14,Fernando Alonso,Aston Martin Honda,22,37,DNF,0,No,1:25.366
+Barcelona-Catalunya,NC,27,Nico Hulkenberg,Audi,9,29,DNF,0,No,1:23.447
+Barcelona-Catalunya,NC,77,Valtteri Bottas,Cadillac Ferrari,20,15,DNF,0,No,1:25.745
+Barcelona-Catalunya,NC,18,Lance Stroll,Aston Martin Honda,21,5,DNF,0,No,1:25.904

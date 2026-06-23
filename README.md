@@ -173,6 +173,24 @@ against the free tier's 500/month. Set the `ODDS_API_KEY` secret and it runs in
 the daily `refresh.yml`; without the key it no-ops. It never overwrites a CSV with
 an empty result and prints the remaining credit balance each run.
 
+## Formula 1 (the webring)
+
+A sister page, `f1.html`, applies the same idea to the 2026 F1 season — linked to
+the football page by a little early-2000s **webring** nav bar. `wcpredictor.f1`
+rates each driver with a pairwise Elo over 2025+2026 finishing orders (the rating
+absorbs car pace), then simulates races Plackett-Luce style (Gumbel-perturbed
+ratings) to get next-race podium odds and a Monte-Carlo drivers'/constructors'
+championship. Build it with:
+
+```bash
+python scripts/fetch_f1.py          # pull data from toUpperCase78/formula1-datasets
+python scripts/make_f1_dashboard.py # -> f1.html
+```
+
+Both run in the daily `refresh.yml`. Caveats: the dataset has no 2026 calendar, so
+the remaining season is assumed to be a 24-race run, and sprints/track effects
+aren't modelled — it's for fun.
+
 ## Data
 
 - `data/teams.csv` — the **real 48 teams and official group draw** for the 2026

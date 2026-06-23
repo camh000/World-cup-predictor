@@ -44,6 +44,10 @@ jobs:
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python scripts/fetch_odds.py || true
+      - name: Refresh F1 data & page
+        run: |
+          python scripts/fetch_f1.py || true
+          python scripts/make_f1_dashboard.py || true
       - name: Rebuild dashboard
         run: python scripts/make_dashboard.py || true
       - name: Commit any changes
