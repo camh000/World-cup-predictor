@@ -71,11 +71,17 @@ class PredictionRecord:
     brier: float
 
 
-def forecast(ratings: RatingStore, params: Params, home: str, away: str, neutral: bool = True):
-    """Pre-match forecast: ``((p_home, p_draw, p_away), (lam_home, lam_away))``."""
+def forecast(ratings: RatingStore, params: Params, home: str, away: str, neutral: bool = True,
+             adj_home: float = 0.0, adj_away: float = 0.0):
+    """Pre-match forecast: ``((p_home, p_draw, p_away), (lam_home, lam_away))``.
+
+    ``adj_home``/``adj_away`` are optional Elo adjustments applied to each side
+    (e.g. regressing a dead-rubber team toward the mean to model rotation); they
+    default to 0, leaving the forecast unchanged.
+    """
     rh, ra = ratings[home], ratings[away]
     home_adv = 0.0 if neutral else params.home_advantage
-    d = (rh.elo - ra.elo) + home_adv
+    d = (rh.elo + adj_home) - (ra.elo + adj_away) + home_adv
     lam_h, lam_a = expected_goals(
         d, params,
         attack_home=rh.attack, defense_away=ra.defense,

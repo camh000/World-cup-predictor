@@ -32,6 +32,10 @@ MARKET_SHRINK = 0.65    # 0 = pure model, 1 = pure market
 MIN_EDGE = 0.10         # require >= 10% expected edge after shrinking
 OUTRIGHT_MIN_EDGE = 0.20      # outright markets are noisier; demand a bigger edge
 OUTRIGHT_MIN_MODEL_PROB = 0.03  # ignore longshot "value" (0.5% vs 0.1% at 1000/1 is noise)
+# Dead-rubber rotation: in a round-3 game a team that has already QUALIFIED or is
+# OUT often rests players. Regress its effective Elo this fraction toward the
+# field mean to model the extra uncertainty. 0 disables it.
+ROTATION_DAMP = 0.30
 
 
 def _load_friends():
@@ -156,13 +160,13 @@ def main() -> None:
     ll_cal = _ll([sharpen(p, gamma) for p in cal_p], cal_o) if cal_p else float("nan")
     calib = (gamma, ll_raw, ll_cal)
 
-    upcoming = _upcoming(paths, teams, params, ratings, name, gamma, n=72)
-    bet = _betting(paths, preds, gamma)
-    outright = _load_outright(paths)
-
     # Mathematical (not just probable) group fate, from results played so far.
     played_pairs = {frozenset((m.home_team_id, m.away_team_id)) for m in group_matches}
     clinch = _clinch_status(base, adv, played_pairs)
+
+    upcoming = _upcoming(paths, teams, params, ratings, name, gamma, clinch, n=72)
+    bet = _betting(paths, preds, gamma)
+    outright = _load_outright(paths)
 
     html = _render(df, name, base, adv, win, preds, summary, friend_rows,
                    upcoming, bet, calib, outright, clinch)
@@ -200,12 +204,14 @@ def _load_outright(paths):
     return out
 
 
-def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
+def _upcoming(paths, teams, params, ratings, name, gamma=1.0, clinch=None, n=40):
     """Rich forecasts for the next ``n`` unplayed group-stage fixtures.
 
     Each row is a dict with the model's (calibrated) probabilities and most-likely
     score, plus — where we hold bookmaker odds — the de-vigged market probabilities
-    and the model's best +EV ("value") selection against that price.
+    and the model's best +EV ("value") selection against that price. For round-3
+    games, a team that has already QUALIFIED or is OUT (per ``clinch``) has its
+    effective Elo regressed toward the field mean to model likely rotation.
     """
     import csv
     import numpy as np
@@ -214,6 +220,15 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
     from wcpredictor.data_io import HOST_TEAM_IDS, _norm_name, build_name_index
     from wcpredictor.history import forecast
     from wcpredictor.poisson import dixon_coles_matrix
+
+    clinch = clinch or {}
+    mean_elo = sum(ratings[t.team_id].elo for t in teams) / len(teams)
+
+    def _rotation_adj(team_id, rnd):
+        # Dead rubber: a clinched/eliminated team in round 3 likely rests players.
+        if rnd == "3" and clinch.get(team_id) in ("QUALIFIED", "OUT"):
+            return (mean_elo - ratings[team_id].elo) * ROTATION_DAMP
+        return 0.0
 
     idx = build_name_index(teams)
     odds_map = _load_odds(paths)
@@ -231,7 +246,8 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
         for r in csv.DictReader(fh):
             if (r.get("Result") or "").strip():
                 continue
-            if r.get("Round Number", "").strip() not in {"1", "2", "3"}:
+            rnd = r.get("Round Number", "").strip()
+            if rnd not in {"1", "2", "3"}:
                 continue
             h = idx.get(_norm_name(r.get("Home Team", "")))
             a = idx.get(_norm_name(r.get("Away Team", "")))
@@ -243,18 +259,21 @@ def _upcoming(paths, teams, params, ratings, name, gamma=1.0, n=40):
                 dt = datetime.strptime(r["Date"].strip(), "%d/%m/%Y %H:%M")
             except ValueError:
                 continue
-            rows.append((dt, h, a))
+            rows.append((dt, h, a, rnd))
     rows.sort(key=lambda x: x[0])
 
     out = []
-    for dt, h, a in rows[:n]:
+    for dt, h, a, rnd in rows[:n]:
         neutral = h not in HOST_TEAM_IDS
-        probs_raw, (lh, la) = forecast(ratings, params, h, a, neutral)
+        adj_h, adj_a = _rotation_adj(h, rnd), _rotation_adj(a, rnd)
+        rotate = [t for t, adj in ((h, adj_h), (a, adj_a)) if adj != 0.0]
+        probs_raw, (lh, la) = forecast(ratings, params, h, a, neutral,
+                                       adj_home=adj_h, adj_away=adj_a)
         probs = sharpen(probs_raw, gamma)
         m = dixon_coles_matrix(lh, la, params.dc_rho, params.max_goals)
         i, j = np.unravel_index(int(np.argmax(m)), m.shape)
         row = {"dt": dt, "h": h, "a": a, "p": probs, "p_raw": probs_raw,
-               "score": (int(i), int(j)),
+               "score": (int(i), int(j)), "rotate": rotate,
                "odds": None, "mkt": None, "sel": None, "edge": None}
         odds = odds_map.get((h, a))
         if odds:
@@ -467,10 +486,15 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         return name[row["h"]] if k == 0 else ("Draw" if k == 1 else name[row["a"]])
 
     up_rows = ""
+    any_rotation = False
     for r in upcoming:
         ph, pd, pa = r["p"]
         si, sj = r["score"]
         pick = name[r["h"]] if ph >= max(pd, pa) else (name[r["a"]] if pa >= pd else "Draw")
+        rot = set(r.get("rotate") or [])
+        any_rotation = any_rotation or bool(rot)
+        hn = name[r["h"]] + ("&dagger;" if r["h"] in rot else "")
+        an = name[r["a"]] + ("&dagger;" if r["a"] in rot else "")
         if r["odds"] is None:
             bet_cell = '<font color="#888888">no odds</font>'
         elif r["edge"] > MIN_EDGE:
@@ -479,11 +503,14 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
             bet_cell = '<font color="#888888">agrees</font>'
         up_rows += (f'<tr bgcolor="{"#FFFFCC" if len(up_rows) % 2 else "#FFFFFF"}">'
                     f'<td>&nbsp;{r["dt"]:%a %d %b %H:%M}Z</td>'
-                    f'<td>&nbsp;{name[r["h"]]} v {name[r["a"]]}</td>'
+                    f'<td>&nbsp;{hn} v {an}</td>'
                     f'<td align="center">{ph*100:.0f} / {pd*100:.0f} / {pa*100:.0f}</td>'
                     f'<td align="center"><b>{pick}</b></td>'
                     f'<td align="center">{si}-{sj}</td>'
                     f'<td align="center">{bet_cell}</td></tr>')
+
+    rot_note = (" &dagger; = likely to rotate (already qualified or eliminated), so its rating is "
+                "regressed toward the field." if any_rotation else "")
 
     # Live value bets: priced upcoming fixtures where the model sees +EV.
     from wcpredictor.betting import devig, ev_per_unit
@@ -643,7 +670,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <th><font color="#FFFF00">Model vs bookies*</font></th></tr>
 {up_rows}
 </table>
-<p><font size="1" face="Courier New">% = home win / draw / away win (calibrated). xScore = single most-likely scoreline. * = the model's biggest disagreement with real bookmaker odds (oddschecker, 20 Jun 2026) &#8212; a diagnostic, not a tip; see the calibration health check below.</font></p>
+<p><font size="1" face="Courier New">% = home win / draw / away win (calibrated). xScore = single most-likely scoreline. * = the model's biggest disagreement with real bookmaker odds (oddschecker, 20 Jun 2026) &#8212; a diagnostic, not a tip; see the calibration health check below.{rot_note}</font></p>
 
 <h2><font color="#FFFFFF">&#127922; CAN WE BEAT THE BOOKIES?</font></h2>
 <p><b>LIVE &#8212; where the model most disagrees with the real bookies</b>

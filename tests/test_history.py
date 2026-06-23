@@ -25,6 +25,15 @@ def test_forecast_probs_sum_to_one():
     assert lams[0] > lams[1]  # stronger home team expected to score more
 
 
+def test_forecast_elo_adjustment_regresses_favourite():
+    base, _ = forecast(_store(), Params(), "AAA", "BBB")
+    # Regress the strong home team's effective Elo down (dead-rubber rotation):
+    # its win probability should fall and stay a valid distribution.
+    adj, _ = forecast(_store(), Params(), "AAA", "BBB", adj_home=-200.0)
+    assert adj[0] < base[0]
+    assert math.isclose(sum(adj), 1.0, abs_tol=1e-9)
+
+
 def test_build_record_captures_pre_and_post():
     params = Params()
     pre = _store()
