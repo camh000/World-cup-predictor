@@ -156,7 +156,7 @@ def main() -> None:
     ll_cal = _ll([sharpen(p, gamma) for p in cal_p], cal_o) if cal_p else float("nan")
     calib = (gamma, ll_raw, ll_cal)
 
-    upcoming = _upcoming(paths, teams, params, ratings, name, gamma, n=40)
+    upcoming = _upcoming(paths, teams, params, ratings, name, gamma, n=72)
     bet = _betting(paths, preds, gamma)
     outright = _load_outright(paths)
 
@@ -467,7 +467,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
         return name[row["h"]] if k == 0 else ("Draw" if k == 1 else name[row["a"]])
 
     up_rows = ""
-    for r in upcoming[:12]:
+    for r in upcoming:
         ph, pd, pa = r["p"]
         si, sj = r["score"]
         pick = name[r["h"]] if ph >= max(pd, pa) else (name[r["a"]] if pa >= pd else "Draw")
@@ -634,7 +634,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <h2><font color="#FFFFFF">&#9917; GROUP STAGE &#8212; WHO'S GOING THROUGH?</font></h2>
 <table cellpadding="6"><tr>{groups_html}</tr></table>
 
-<h2><font color="#FFFFFF">&#128302; UPCOMING &#8212; NEXT MATCHES PREDICTED</font></h2>
+<h2><font color="#FFFFFF">&#128302; REMAINING GROUP-STAGE MATCHES &#8212; PREDICTED</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
 <tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;Kickoff (UTC)</font></th>
 <th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
