@@ -70,6 +70,29 @@ few priced fixtures have settled with a real open→close curve.
   (e.g. API-Football) confirm only ~1h pre-kickoff, which is operationally
   mismatched with a once-daily statically-rebuilt page anyway.
 
+## 6. Toward "best predictor": realized closing-line-value (CLV) scoreboard — TOP forward priority
+
+The only honest verdict on "are we beating the market" is **realized CLV**: for each
+bet the model flags, compare the price we'd have taken to the **closing** line, summed
+over a real sample. The infra exists — `scripts/fetch_odds.py` appends timestamped
+snapshots to `data/odds_history.csv` / `outright_history.csv`. Build a panel that, per
+flagged +EV selection, computes (price-taken → closing-line) value and aggregates it
+(beating the close > flat P/L as a skill signal, and far harder to fool than in-sample
+log-loss). It is thin until snapshots accumulate over days, so build it now and let it
+fill in. This — not more features — is what tells us if there's any edge.
+
+## F1 data — investigated, current setup is right
+
+- **bet365 F1 odds: unavailable.** the-odds-api (our provider) lists 170 sports across
+  16 groups with **no Motorsport group at all** — F1 markets can't be fetched here on
+  any key. Would need a different odds provider (separate key + integration).
+- **More F1 seasons: validated harmful.** `scripts/validate_f1_history.py` (pulls full
+  history from f1db) shows the 2026 winner-log-loss is best with the **2025+2026** window
+  the model already uses; adding 2024/2023/2022 steadily worsens it (F1 is non-stationary
+  — old car/driver pace is stale). Keep the 1-season-back window. f1db (full history,
+  grid, stable IDs) is noted as a better *source* if the pipeline is ever reworked, and
+  carries **grid position** — a strong predictor for a future post-qualifying race model.
+
 ## Done
 
 - ~~Match history (backlog #2)~~ — `scripts/fetch_history.py` pulls recent (2023+)
