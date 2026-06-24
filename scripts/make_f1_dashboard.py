@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 F1DIR = ROOT / "data" / "f1"
 OUT = ROOT / "f1.html"
 
-TOTAL_RACES = 24      # 2026 calendar length (the dataset has no 2026 calendar file)
+TOTAL_RACES = 24      # fallback only; the real calendar comes from data/f1/calendar_2026.csv
 N_SIMS = 20000
 # Calibrated on a walk-forward race backtest (scripts/validate_f1.py): scale=110
 # is winner-log-loss-optimal, and dnf_prob is lifted from 0.12 to 0.18 — the
@@ -50,7 +50,7 @@ def _webring(active: str) -> str:
         '</font></td></tr></table>')
 
 
-def _render(rows, con_rows, race_rows, completed, updated) -> str:
+def _render(rows, con_rows, race_rows, completed, total_rounds, remaining, remaining_sprints, next_gp, updated) -> str:
     fav = _flag_favicon()
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
@@ -70,7 +70,7 @@ def _render(rows, con_rows, race_rows, completed, updated) -> str:
 {_webring('f1')}
 <h1><font color="#FF1801" size="6">&#127937; FORMULA 1 &#8212; 2026 PREDICT-O-MATIC</font></h1>
 <marquee>&#9888; Lights out and away we go! Powered by a pairwise-Elo + Plackett-Luce Monte Carlo &#9888;</marquee>
-<p align="center"><font size="1">Last updated {updated} &middot; {completed} of {TOTAL_RACES} races run</font></p>
+<p align="center"><font size="1">Last updated {updated} &middot; {completed} of {total_rounds} races run &middot; next up: <b>{next_gp}</b></font></p>
 
 <h2><font color="#FFD700">&#127942; DRIVERS' CHAMPIONSHIP</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#000000" width="90%">
@@ -87,7 +87,7 @@ def _render(rows, con_rows, race_rows, completed, updated) -> str:
 {con_rows}
 </table>
 
-<h2><font color="#FFD700">&#127937; NEXT GRAND PRIX &#8212; PODIUM ODDS</font></h2>
+<h2><font color="#FFD700">&#127937; NEXT GP: {next_gp} &#8212; PODIUM ODDS</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#000000" width="80%">
 <tr bgcolor="#FF1801"><th align="left"><font color="#FFF">&nbsp;Driver</font></th><th><font color="#FFF">Win</font></th>
 <th><font color="#FFF">Podium</font></th><th><font color="#FFF">Points</font></th></tr>
@@ -95,8 +95,9 @@ def _render(rows, con_rows, race_rows, completed, updated) -> str:
 </table>
 <p><font size="1" face="Courier New">Driver ratings are a pairwise Elo over 2025+2026 finishing orders (the rating
 absorbs car pace). Races are simulated Plackett-Luce style (Gumbel-perturbed ratings), {N_SIMS} runs, with a
-{DNF_PROB*100:.0f}% per-driver DNF chance. Remaining season assumed {TOTAL_RACES} races; sprints and
-track-specific effects not modelled. Data: toUpperCase78/formula1-datasets. Just for fun.</font></p>
+{DNF_PROB*100:.0f}% per-driver DNF chance. The title sim runs the real remaining 2026 calendar &#8212;
+{remaining} grands prix + {remaining_sprints} sprints. Track-specific effects not modelled. Data:
+toUpperCase78/formula1-datasets + f1db calendar. Just for fun.</font></p>
 {_webring('f1')}
 </div>
 </body></html>"""
@@ -118,6 +119,25 @@ def _sprint_rows(path):
     return out
 
 
+def _load_calendar(year: int = 2026):
+    """Real season calendar from data/f1/calendar_<year>.csv (scripts/fetch_f1_calendar.py)."""
+    import csv
+    p = F1DIR / f"calendar_{year}.csv"
+    out = []
+    if not p.exists():
+        return out
+    with p.open("r", encoding="utf-8", newline="") as fh:
+        for r in csv.DictReader(fh):
+            out.append({"round": int(r["round"]), "date": r["date"],
+                        "grand_prix": r["grand_prix"],
+                        "sprint": r["sprint"].strip().lower() == "true"})
+    return out
+
+
+def _gp_name(gp: str) -> str:
+    return gp.replace("-", " ").title() if gp else "TBC"
+
+
 def main() -> None:
     r25 = load_races(F1DIR / "race_results_2025.csv")
     r26 = load_races(F1DIR / "race_results_2026.csv")
@@ -127,10 +147,16 @@ def main() -> None:
     drivers, team_of = current_grid(r26)
     dp, cp = standings([r26], _sprint_rows(F1DIR / "sprint_results_2026.csv"))
     completed = len(r26)
-    remaining = max(0, TOTAL_RACES - completed)
+
+    # Real calendar (rounds + sprints) instead of a hardcoded TOTAL_RACES.
+    cal = _load_calendar(2026)
+    total_rounds = len(cal) or TOTAL_RACES
+    remaining = max(0, total_rounds - completed)
+    remaining_sprints = sum(1 for c in cal if c["round"] > completed and c["sprint"])
+    next_gp = _gp_name(next((c["grand_prix"] for c in cal if c["round"] == completed + 1), ""))
 
     dt_odds, ct_odds, proj = simulate_championship(
-        drivers, team_of, elo, dp, cp, remaining,
+        drivers, team_of, elo, dp, cp, remaining, remaining_sprints=remaining_sprints,
         n_sims=N_SIMS, scale=SCALE, dnf_prob=DNF_PROB)
     race = next_race_probs(drivers, elo, n_sims=N_SIMS, scale=SCALE, dnf_prob=DNF_PROB)
 
@@ -163,7 +189,8 @@ def main() -> None:
                       f'<td align="center">{pts*100:.0f}%</td></tr>')
 
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
-    OUT.write_text(_render(rows, con_rows, race_rows, completed, updated), encoding="utf-8")
+    OUT.write_text(_render(rows, con_rows, race_rows, completed, total_rounds, remaining,
+                           remaining_sprints, next_gp, updated), encoding="utf-8")
     print(f"Wrote {OUT}")
 
 

@@ -81,8 +81,14 @@ flagged +EV selection, computes (price-taken → closing-line) value and aggrega
 log-loss). It is thin until snapshots accumulate over days, so build it now and let it
 fill in. This — not more features — is what tells us if there's any edge.
 
-## F1 data — investigated, current setup is right
+## F1 data — real calendar wired; more-seasons validated harmful
 
+- ~~**Real 2026 calendar.**~~ `scripts/fetch_f1_calendar.py` pulls the schedule from
+  f1db → `data/f1/calendar_2026.csv` (**22 rounds, 6 sprints** — not the hardcoded
+  24). `make_f1_dashboard` now derives remaining races + remaining sprints from it
+  and names the next GP; `simulate_championship` gained a `remaining_sprints` arg
+  (top-8 sprint points in the projection). Calendar is static → committed, periodic
+  fetch (not the daily refresh, which just updates the completed count via results).
 - **bet365 F1 odds: unavailable.** the-odds-api (our provider) lists 170 sports across
   16 groups with **no Motorsport group at all** — F1 markets can't be fetched here on
   any key. Would need a different odds provider (separate key + integration).
