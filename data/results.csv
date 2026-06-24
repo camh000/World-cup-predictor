@@ -45,3 +45,5 @@ date,home_team_id,away_team_id,home_goals,away_goals,stage,competition,neutral
 2026-06-23,JOR,ALG,1,2,group,WC2026,true
 2026-06-23,POR,UZB,5,0,group,WC2026,true
 2026-06-23,ENG,GHA,0,0,group,WC2026,true
+2026-06-23,PAN,CRO,0,1,group,WC2026,true
+2026-06-24,COL,COD,1,0,group,WC2026,true
