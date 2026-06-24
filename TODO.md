@@ -61,6 +61,14 @@ few priced fixtures have settled with a real open→close curve.
 
 ## Done
 
+- ~~Strength prior (backlog #1)~~ — added `data/strength_prior.csv` from the real
+  FIFA men's ranking (`scripts/fetch_strength_prior.py`, official ranking API),
+  folded into the seeds via `respread_seeds.py --strength 0.25`. A modest blend
+  improved **both** the walk-forward backtest (log-loss 0.896→0.892, Brier down)
+  **and** the leak-free prior-vs-market KL (0.0193→~0.018), peaking around w=0.2–0.3
+  and degrading past 0.5 — three signals agreeing, so adopted a conservative 0.25.
+  Harness: `scripts/validate_strength_prior.py`. (Re-run the fetch + blend when FIFA
+  updates its monthly ranking; it is a periodic step, not the daily refresh.)
 - ~~Fix the market mis-calibration~~ — root cause was a **sign-flipping** spread
   error (elite over-confidence, mid-tier about right) plus a structurally
   over-concentrated outright. Fixed with two forecast-only, reversible lenses

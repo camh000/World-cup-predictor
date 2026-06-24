@@ -195,11 +195,19 @@ aren't modelled — it's for fun.
 
 - `data/teams.csv` — the **real 48 teams and official group draw** for the 2026
   World Cup (drawn 5 Dec 2025; hosts Mexico/Canada/USA in A1/B1/D1).
-- `data/seed_ratings.csv` — seed strengths on the **eloratings.net scale**
-  (June 2026). Top contenders use the exact published values (Spain 2129,
-  Argentina 2115, France 2063, England 2024, Portugal 1989, Brazil 1978); the
-  remaining teams are close approximations. The engine refines all of them from
-  real results, so exact starting values matter less over time.
+- `data/seed_ratings.csv` — seed strengths anchored on the **eloratings.net scale**
+  (June 2026), then **blended 25% toward the FIFA ranking prior** (see
+  `strength_prior.csv` below) and with a few tiny-nation seeds corrected to
+  market-implied values. The engine refines all of them from real results, so exact
+  starting values matter less over time.
+- `data/strength_prior.csv` — the current FIFA men's ranking (rank + points),
+  fetched by `scripts/fetch_strength_prior.py` from FIFA's official ranking API (a
+  real external strength signal; FIFA's post-2018 ranking is itself Elo-style). It
+  is folded into the seeds by `scripts/respread_seeds.py --strength 0.25` — a weight
+  validated on **both** the walk-forward backtest and the prior-vs-market KL
+  (`scripts/validate_strength_prior.py`), where a modest blend beat the current
+  seeds and over-weighting hurt. Re-run the fetch + blend when FIFA updates its
+  monthly ranking (a periodic step, not the daily refresh).
 - `data/results.csv` — real results the engine learns from, generated from the
   official FIFA schedule (`data/fifa_worldcup_2026_schedule.csv`) via
   `wcpredict import-results`. Re-run it as each matchday is played.
