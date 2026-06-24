@@ -162,10 +162,14 @@ def simulate_race(drivers: Sequence[str], elo: Dict[str, float], rng, *,
 def simulate_championship(
     drivers: Sequence[str], team_of: Dict[str, str], elo: Dict[str, float],
     driver_points: Dict[str, float], constructor_points: Dict[str, float],
-    remaining_races: int, *, n_sims: int = 20000, seed: int = 42,
-    scale: float = 110.0, dnf_prob: float = 0.12,
+    remaining_races: int, *, remaining_sprints: int = 0, n_sims: int = 20000,
+    seed: int = 42, scale: float = 110.0, dnf_prob: float = 0.12,
 ) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float]]:
-    """Monte-Carlo the remaining races.
+    """Monte-Carlo the remaining races (and any remaining sprints).
+
+    ``remaining_sprints`` adds that many sprint races (top-8 ``SPRINT_POINTS``)
+    on top of the ``remaining_races`` grands prix, so the title projection counts
+    the sprint points still on offer. 0 = no sprints (back-compatible).
 
     Returns (driver champion probs, constructor champion probs, mean projected
     driver points).
@@ -188,6 +192,11 @@ def simulate_championship(
             for pos, d in enumerate(order[:10]):
                 dp[d] += RACE_POINTS[pos]
                 cp[team_of[d]] += RACE_POINTS[pos]
+        for _s in range(remaining_sprints):
+            order = simulate_race(drivers, elo, rng, scale=scale, dnf_prob=dnf_prob)
+            for pos, d in enumerate(order[:len(SPRINT_POINTS)]):
+                dp[d] += SPRINT_POINTS[pos]
+                cp[team_of[d]] += SPRINT_POINTS[pos]
         drv_titles[max(dp, key=dp.get)] += 1
         con_titles[max(cp, key=cp.get)] += 1
         for d in drivers:
