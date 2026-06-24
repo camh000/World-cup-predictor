@@ -70,16 +70,17 @@ few priced fixtures have settled with a real open→close curve.
   (e.g. API-Football) confirm only ~1h pre-kickoff, which is operationally
   mismatched with a once-daily statically-rebuilt page anyway.
 
-## 6. Toward "best predictor": realized closing-line-value (CLV) scoreboard — TOP forward priority
+## 6. Toward "best predictor": realized closing-line-value (CLV) scoreboard — BUILT
 
-The only honest verdict on "are we beating the market" is **realized CLV**: for each
-bet the model flags, compare the price we'd have taken to the **closing** line, summed
-over a real sample. The infra exists — `scripts/fetch_odds.py` appends timestamped
-snapshots to `data/odds_history.csv` / `outright_history.csv`. Build a panel that, per
-flagged +EV selection, computes (price-taken → closing-line) value and aggregates it
-(beating the close > flat P/L as a skill signal, and far harder to fool than in-sample
-log-loss). It is thin until snapshots accumulate over days, so build it now and let it
-fill in. This — not more features — is what tells us if there's any edge.
+The honest verdict on "are we beating the market". `betting.clv()` + the dashboard
+panel (`make_dashboard._clv_scoreboard`) read `data/odds_history.csv`, take the first
+snapshot per fixture as the price "taken" and the last as the **closing** line, replay
+the honest filter (shrink to the opening market, MIN_EDGE) on settled fixtures, and
+report whether each bet **beat the close** (CLV = taken_odds × closing_fair_prob − 1) —
+the part that doesn't wash out as luck. It is thin today (only 1 odds snapshot exists,
+so 0 qualifying bets) and shows an honest "accumulating" state; it fills itself in as
+the daily refresh re-prices fixtures over days and they're played. Unit-tested
+(`tests/test_clv.py`). Next: extend the same treatment to the outright market.
 
 ## F1 data — real calendar wired; more-seasons validated harmful
 
