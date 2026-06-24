@@ -166,10 +166,11 @@ def main() -> None:
 
     upcoming = _upcoming(paths, teams, params, ratings, name, gamma, clinch, n=72)
     bet = _betting(paths, preds, gamma)
+    clv_data = _clv_scoreboard(paths, preds, gamma)
     outright = _load_outright(paths)
 
     html = _render(df, name, base, adv, win, preds, summary, friend_rows,
-                   upcoming, bet, calib, outright, clinch)
+                   upcoming, bet, calib, outright, clinch, clv_data)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -320,6 +321,61 @@ def _betting(paths, preds, gamma=1.0):
     return evaluate(matches, bet_probs=bet_probs, edge_threshold=MIN_EDGE)
 
 
+def _clv_scoreboard(paths, preds, gamma=1.0):
+    """Closing-line-value scoreboard from data/odds_history.csv.
+
+    For each fixture with >=2 timestamped odds snapshots, the earliest snapshot is
+    the price the model would have 'taken' (when it flagged the bet) and the latest
+    is the closing line. For settled fixtures we replay the same honest filter
+    (shrink to the *opening* market, require MIN_EDGE) and measure whether the bet
+    beat the close (CLV = taken_odds * closing_fair_prob - 1). Beating the close is
+    the real proof of edge -- independent of whether the bet won. Returns counts
+    (so the panel can show it accumulating) plus the per-bet CLV rows.
+    """
+    import csv
+    from collections import defaultdict
+    from wcpredictor.betting import clv, devig, ev_per_unit
+    from wcpredictor.calibration import blend, sharpen
+
+    snaps = defaultdict(list)
+    timestamps = set()
+    hist = paths.data_dir / "odds_history.csv"
+    if hist.exists():
+        with hist.open("r", encoding="utf-8", newline="") as fh:
+            for r in csv.DictReader(fh):
+                timestamps.add(r["fetched_at"])
+                snaps[(r["date"], r["home_team_id"], r["away_team_id"])].append(
+                    (r["fetched_at"], (float(r["odds_home"]), float(r["odds_draw"]), float(r["odds_away"]))))
+
+    om = {"home": 0, "draw": 1, "away": 2}
+    pred_idx = {}
+    for r in preds:
+        if r["actual_outcome"] in om:
+            pred_idx[(r["date"], r["home_team_id"], r["away_team_id"])] = (
+                (float(r["p_home"]), float(r["p_draw"]), float(r["p_away"])), om[r["actual_outcome"]])
+
+    n_pairs = sum(1 for v in snaps.values() if len({t for t, _ in v}) >= 2)
+    bets = []
+    for k, v in snaps.items():
+        ts = sorted({t for t, _ in v})
+        if len(ts) < 2 or k not in pred_idx:
+            continue
+        open_o = next(o for t, o in v if t == ts[0])
+        close_o = next(o for t, o in v if t == ts[-1])
+        probs, actual = pred_idx[k]
+        decide = blend(sharpen(probs, gamma), devig(open_o), MARKET_SHRINK)
+        evs = [ev_per_unit(decide[i], open_o[i]) for i in range(3)]
+        sel = max(range(3), key=evs.__getitem__)
+        if evs[sel] <= MIN_EDGE:
+            continue
+        cval = clv(open_o[sel], devig(close_o)[sel])
+        won = actual == sel
+        bets.append({"fix": k, "sel": sel, "open": open_o[sel], "close": close_o[sel],
+                     "clv": cval, "won": won, "pl": (open_o[sel] - 1.0) if won else -1.0})
+    return {"n_snapshots": len(timestamps), "first": min(timestamps)[:10] if timestamps else None,
+            "n_tracked": len(snaps), "n_pairs": n_pairs, "bets": bets}
+
+
 # --------------------------------------------------------------------------- #
 # Rendering (intentionally retro)
 # --------------------------------------------------------------------------- #
@@ -372,7 +428,7 @@ def _clinch_status(base, adv, played_pairs):
     return status
 
 
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright, clinch) -> str:
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright, clinch, clv_data) -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -590,6 +646,44 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
            f'&middot; top-pick <b>{summary.hit_rate*100:.0f}%</b> &middot; '
            f'skill <b>{summary.skill*100:+.0f}%</b> over {summary.n} games') if summary else "No games yet."
 
+    # Closing-line-value scoreboard: the honest verdict on edge. Empty until odds
+    # snapshots accumulate an open->close pair on a settled game; it fills itself in.
+    cbets = clv_data["bets"]
+    if not cbets:
+        clv_html = (
+            '<p>&#8987; <b>Accumulating.</b> Closing-line value needs at least two odds '
+            f'snapshots (an opening and a closing price) on a settled game. So far: '
+            f'<b>{clv_data["n_snapshots"]}</b> snapshot(s) since {clv_data["first"] or "&ndash;"}, '
+            f'<b>{clv_data["n_tracked"]}</b> fixtures tracked, <b>{clv_data["n_pairs"]}</b> with an '
+            'open+close pair. The daily refresh re-prices fixtures, so this lights up on its own '
+            'as games are priced over time and played &#8212; <i>beating the closing line is the '
+            'only honest proof of edge</i>.</p>')
+    else:
+        n = len(cbets)
+        beat = sum(1 for b in cbets if b["clv"] > 0)
+        mean_clv = sum(b["clv"] for b in cbets) / n
+        pl = sum(b["pl"] for b in cbets)
+        crows = "".join(
+            f'<tr bgcolor="{"#FFFFCC" if i % 2 else "#FFFFFF"}">'
+            f'<td>&nbsp;{name.get(b["fix"][1], b["fix"][1])} v {name.get(b["fix"][2], b["fix"][2])}</td>'
+            f'<td align="center">{("Home","Draw","Away")[b["sel"]]}</td>'
+            f'<td align="center">{b["open"]:.2f}</td><td align="center">{b["close"]:.2f}</td>'
+            f'<td align="center"><b><font color="{"#008000" if b["clv"]>0 else "#CC0000"}">'
+            f'{b["clv"]*100:+.0f}%</font></b></td>'
+            f'<td align="center">{"WON" if b["won"] else "lost"}</td></tr>'
+            for i, b in enumerate(cbets))
+        clv_html = (
+            f'<p>Over <b>{n}</b> settled bet(s) the model would have placed, it beat the closing '
+            f'line <b>{beat}/{n}</b> times (mean CLV <b>{mean_clv*100:+.1f}%</b>), for a realized '
+            f'<b>{pl:+.2f}u</b>. Beating the close matters more than the P/L on a small sample &#8212; '
+            'it is the part that does not wash out as luck.</p>'
+            '<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="80%">'
+            '<tr bgcolor="#4B0082"><th align="left"><font color="#FFFF00">&nbsp;Match</font></th>'
+            '<th><font color="#FFFF00">Bet</font></th><th><font color="#FFFF00">Took</font></th>'
+            '<th><font color="#FFFF00">Closed</font></th><th><font color="#FFFF00">CLV</font></th>'
+            '<th><font color="#FFFF00">Result</font></th></tr>'
+            f'{crows}</table>')
+
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>:::: WORLD CUP 2026 PREDICT-O-MATIC 3000 ::::</title>
@@ -703,6 +797,13 @@ these are overwhelmingly the model being wrong, not free money.</p>
 {bet_html}
 </table>
 <p><b><font color="#CC0000">VERDICT:</font></b> {bet_verdict}</p>
+
+<h3><font color="#FFFFFF">&#127919; CLOSING-LINE VALUE &#8212; the real edge test</font></h3>
+<p><font size="1" face="Courier New">For every bet the model would place, we compare the price it would have
+<b>taken</b> (the opening odds snapshot) with the <b>closing</b> line (last snapshot before kickoff). Beating the
+close &#8212; positive CLV &#8212; is the one signal that genuinely separates skill from luck, so this is the
+scoreboard that matters.</font></p>
+{clv_html}
 
 <h2><font color="#FFFFFF">&#128221; LATEST PREDICTIONS vs REALITY</font></h2>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="60%">

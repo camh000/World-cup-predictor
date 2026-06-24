@@ -56,6 +56,17 @@ def ev_per_unit(prob: float, dec_odds: float) -> float:
     return prob * dec_odds - 1.0
 
 
+def clv(taken_odds: float, closing_fair_prob: float) -> float:
+    """Closing-line value of a back bet, as EV per unit at the price you took
+    judged by the closing (de-vigged) probability: ``taken_odds * p_close - 1``.
+
+    Beating the closing line (CLV > 0) is the single most trustworthy signal of
+    genuine edge — the closing line is the sharpest estimate available, and CLV is
+    measured independently of whether the individual bet happened to win.
+    """
+    return taken_odds * closing_fair_prob - 1.0
+
+
 def kelly_fraction(prob: float, dec_odds: float) -> float:
     """Full-Kelly stake fraction for a back bet; 0 if there is no edge."""
     b = dec_odds - 1.0
