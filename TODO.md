@@ -58,9 +58,36 @@ few priced fixtures have settled with a real open→close curve.
 - **Group tie-breakers**: currently points/GD/GF/Elo — add head-to-head.
 - **Home advantage**: only the 3 hosts are flagged; consider modelling large
   travelling support at "neutral" US venues (e.g. Mexico, Argentina).
+- **xG ratings (backlog #4) — scouted, deferred (partial free coverage).** The only
+  clean *free* international-xG source is StatsBomb open-data, but it covers only
+  major tournaments (WC 2018/2022, Euro 2020/2024, AFCON 2023, Copa 2024) — no
+  qualifiers/friendlies/Nations League and nothing for the ongoing 2026 WC — as
+  heavy event-level JSON. So it can't replace the scoreline path, only supplement
+  it for ~6 tournaments. A real but large sub-project (event parsing + a model for
+  folding xG into the Elo, validated on the backtest); not bundled here.
+- **Lineups/injuries (backlog #5) — blocked (needs a paid live feed).** No reliable
+  free confirmed-lineup/injury API across 48 national teams; paid feeds
+  (e.g. API-Football) confirm only ~1h pre-kickoff, which is operationally
+  mismatched with a once-daily statically-rebuilt page anyway.
 
 ## Done
 
+- ~~Match history (backlog #2)~~ — `scripts/fetch_history.py` pulls recent (2023+)
+  real internationals between WC teams from martj42/international_results,
+  **excluding FIFA World Cup games** (they'd leak `results.csv` / dup the WC2018/22
+  file); merged 397 matches into `data/historical_matches.csv` (128→525, dedup,
+  leak-guard tested). Retune on the expanded history was **validated and NOT
+  adopted**: leak-free, it tunes beta 1.0→0.70 / mu 1.35→0.99 / dc_rho −0.13→0 and
+  improves in-sample, but on the **held-out 2026 WC** it gets *worse* (log-loss
+  0.875→0.907) — international friendlies/qualifiers have different goal dynamics
+  than WC finals. Goal-shape params left unchanged; the richer data stays for
+  future retunes. (Same discipline as the reverted draw-retune.)
+- ~~F1 sim calibration (backlog #3, sim half)~~ — `scripts/validate_f1.py` walk-forward
+  backtest over the 2026 races: `dnf_prob` lifted 0.12→0.18 (measured DNF rate is
+  11.5% in 2025 but 23.4% in 2026; 0.18 beats 0.12 at every scale and is a
+  conservative season-weighted value), `scale=110` kept (winner-LL-optimal). The
+  *market* half (bet365 F1 de-vig/value) is blocked — the odds-API key carries no
+  motorsport markets.
 - ~~Strength prior (backlog #1)~~ — added `data/strength_prior.csv` from the real
   FIFA men's ranking (`scripts/fetch_strength_prior.py`, official ranking API),
   folded into the seeds via `respread_seeds.py --strength 0.25`. A modest blend

@@ -127,3 +127,400 @@ date,home_team_id,away_team_id,home_goals,away_goals,stage,competition,neutral
 2022-12-14,FRA,MAR,2,0,semi finals,fifa_worldcup_2022_schedule,true
 2022-12-17,CRO,MAR,2,1,finals,fifa_worldcup_2022_schedule,true
 2022-12-18,ARG,FRA,3,3,finals,fifa_worldcup_2022_schedule,true
+2023-01-09,IRQ,SAU,2,0,international,Gulf Cup,false
+2023-01-16,IRQ,QAT,2,1,international,Gulf Cup,false
+2023-01-28,USA,COL,0,0,international,Friendly,false
+2023-03-23,ARG,PAN,2,0,international,Friendly,false
+2023-03-24,AUS,ECU,3,1,international,Friendly,false
+2023-03-24,FRA,NED,4,0,international,UEFA Euro qualification,false
+2023-03-24,JPN,URU,1,1,international,Friendly,false
+2023-03-24,KOR,COL,2,2,international,Friendly,false
+2023-03-24,SWE,BEL,0,3,international,UEFA Euro qualification,false
+2023-03-25,CUW,CAN,0,2,international,CONCACAF Nations League,false
+2023-03-25,ESP,NOR,3,0,international,UEFA Euro qualification,false
+2023-03-25,MAR,BRA,2,1,international,Friendly,false
+2023-03-28,ARG,CUW,7,0,international,Friendly,false
+2023-03-28,AUS,ECU,1,2,international,Friendly,false
+2023-03-28,GER,BEL,2,3,international,Friendly,false
+2023-03-28,JPN,COL,1,2,international,Friendly,false
+2023-03-28,KOR,URU,1,2,international,Friendly,false
+2023-03-28,SCO,ESP,2,0,international,UEFA Euro qualification,false
+2023-03-28,TUR,CRO,0,2,international,UEFA Euro qualification,false
+2023-04-19,USA,MEX,1,1,international,Friendly,false
+2023-06-12,MAR,CPV,0,0,international,Friendly,false
+2023-06-14,NED,CRO,2,4,international,UEFA Nations League,false
+2023-06-15,ARG,AUS,2,0,international,Friendly,true
+2023-06-15,PAN,CAN,0,2,international,CONCACAF Nations League,true
+2023-06-15,USA,MEX,3,0,international,CONCACAF Nations League,false
+2023-06-16,COL,IRQ,1,0,international,Friendly,true
+2023-06-16,SWE,NZL,4,1,international,Friendly,false
+2023-06-17,BEL,AUT,1,1,international,UEFA Euro qualification,false
+2023-06-17,NOR,SCO,1,2,international,UEFA Euro qualification,false
+2023-06-17,POR,BIH,3,0,international,UEFA Euro qualification,false
+2023-06-17,RSA,MAR,2,1,international,African Cup of Nations qualification,false
+2023-06-18,CRO,ESP,0,0,international,UEFA Nations League,true
+2023-06-18,PAN,MEX,0,1,international,CONCACAF Nations League,true
+2023-06-18,USA,CAN,2,0,international,CONCACAF Nations League,false
+2023-06-20,ALG,TUN,1,1,international,Friendly,false
+2023-06-20,AUT,SWE,2,0,international,UEFA Euro qualification,false
+2023-06-20,BRA,SEN,2,4,international,Friendly,true
+2023-06-20,GER,COL,0,2,international,Friendly,false
+2023-06-20,UZB,IRN,0,1,international,CAFA Nations Cup,false
+2023-06-25,HAI,QAT,2,1,international,Gold Cup,true
+2023-06-29,HAI,MEX,1,3,international,Gold Cup,true
+2023-07-02,MEX,QAT,0,1,international,Gold Cup,true
+2023-07-08,PAN,QAT,4,0,international,Gold Cup,true
+2023-07-09,USA,CAN,2,2,international,Gold Cup,false
+2023-07-12,USA,PAN,1,1,international,Gold Cup,false
+2023-07-16,MEX,PAN,1,0,international,Gold Cup,true
+2023-09-07,ARG,ECU,1,0,international,FIFA World Cup qualification,false
+2023-09-07,NOR,JOR,6,0,international,Friendly,false
+2023-09-09,GER,JPN,1,4,international,Friendly,false
+2023-09-09,MEX,AUS,2,2,international,Friendly,true
+2023-09-09,USA,UZB,3,0,international,Friendly,false
+2023-09-12,ECU,URU,2,1,international,FIFA World Cup qualification,false
+2023-09-12,EGY,TUN,1,3,international,Friendly,false
+2023-09-12,GER,FRA,2,1,international,Friendly,false
+2023-09-12,JPN,TUR,4,2,international,Friendly,true
+2023-09-12,KOR,SAU,1,0,international,Friendly,true
+2023-09-12,MEX,UZB,3,3,international,Friendly,true
+2023-09-12,RSA,COD,1,0,international,Friendly,false
+2023-09-12,SCO,ENG,1,3,international,Friendly,false
+2023-09-12,SEN,ALG,0,1,international,Friendly,false
+2023-09-12,SWE,AUT,1,3,international,UEFA Euro qualification,false
+2023-10-12,ALG,CPV,5,1,international,Friendly,false
+2023-10-12,ARG,PAR,1,0,international,FIFA World Cup qualification,false
+2023-10-12,COL,URU,2,2,international,FIFA World Cup qualification,false
+2023-10-12,CRO,TUR,0,1,international,UEFA Euro qualification,false
+2023-10-12,ESP,SCO,2,0,international,UEFA Euro qualification,false
+2023-10-13,AUT,BEL,2,3,international,UEFA Euro qualification,false
+2023-10-13,COD,NZL,1,1,international,Friendly,true
+2023-10-13,CUW,PAN,1,2,international,CONCACAF Nations League,false
+2023-10-13,ENG,AUS,1,0,international,Friendly,false
+2023-10-13,IRQ,QAT,0,0,international,Friendly,true
+2023-10-13,JPN,CAN,4,1,international,Friendly,false
+2023-10-13,KOR,TUN,4,0,international,Friendly,false
+2023-10-13,NED,FRA,1,2,international,UEFA Euro qualification,false
+2023-10-14,CIV,MAR,1,1,international,Friendly,false
+2023-10-14,MEX,GHA,2,0,international,Friendly,true
+2023-10-14,USA,GER,1,3,international,Friendly,false
+2023-10-15,NOR,ESP,0,1,international,UEFA Euro qualification,false
+2023-10-16,ALG,EGY,1,1,international,Friendly,true
+2023-10-16,BEL,SWE,1,1,international,UEFA Euro qualification,false
+2023-10-16,BIH,POR,0,5,international,UEFA Euro qualification,false
+2023-10-17,AUS,NZL,2,0,international,Soccer Ashes,true
+2023-10-17,CIV,RSA,1,1,international,Friendly,false
+2023-10-17,ECU,COL,0,0,international,FIFA World Cup qualification,false
+2023-10-17,FRA,SCO,4,1,international,Friendly,false
+2023-10-17,MEX,GER,2,2,international,Friendly,true
+2023-10-17,URU,BRA,2,0,international,FIFA World Cup qualification,false
+2023-10-17,USA,GHA,4,0,international,Friendly,false
+2023-11-16,ARG,URU,0,2,international,FIFA World Cup qualification,false
+2023-11-16,COL,BRA,2,1,international,FIFA World Cup qualification,false
+2023-11-18,GER,TUR,2,3,international,Friendly,false
+2023-11-19,SCO,NOR,3,3,international,UEFA Euro qualification,false
+2023-11-21,AUT,GER,2,0,international,Friendly,false
+2023-11-21,BRA,ARG,0,1,international,FIFA World Cup qualification,false
+2023-11-21,JOR,SAU,0,2,international,FIFA World Cup qualification,false
+2023-11-21,PAR,COL,0,1,international,FIFA World Cup qualification,false
+2023-11-21,UZB,IRN,2,2,international,FIFA World Cup qualification,false
+2023-12-16,MEX,COL,2,3,international,Friendly,true
+2024-01-05,QAT,JOR,1,2,international,Friendly,false
+2024-01-06,IRQ,KOR,0,1,international,Friendly,true
+2024-01-09,JPN,JOR,6,1,international,Friendly,true
+2024-01-10,TUN,CPV,2,0,international,Friendly,false
+2024-01-14,GHA,CPV,1,2,international,African Cup of Nations,true
+2024-01-18,EGY,GHA,2,2,international,African Cup of Nations,true
+2024-01-19,IRQ,JPN,2,1,international,AFC Asian Cup,true
+2024-01-20,JOR,KOR,2,2,international,AFC Asian Cup,true
+2024-01-21,MAR,COD,1,1,international,African Cup of Nations,true
+2024-01-22,CPV,EGY,2,2,international,African Cup of Nations,true
+2024-01-23,AUS,UZB,1,1,international,AFC Asian Cup,true
+2024-01-24,RSA,TUN,0,0,international,African Cup of Nations,true
+2024-01-28,EGY,COD,1,1,international,African Cup of Nations,true
+2024-01-29,CIV,SEN,1,1,international,African Cup of Nations,false
+2024-01-29,IRQ,JOR,2,3,international,AFC Asian Cup,true
+2024-01-30,MAR,RSA,0,2,international,African Cup of Nations,true
+2024-01-30,SAU,KOR,1,1,international,AFC Asian Cup,true
+2024-02-02,AUS,KOR,1,2,international,AFC Asian Cup,true
+2024-02-03,CPV,RSA,0,0,international,African Cup of Nations,true
+2024-02-03,IRN,JPN,2,1,international,AFC Asian Cup,true
+2024-02-03,QAT,UZB,1,1,international,AFC Asian Cup,false
+2024-02-06,JOR,KOR,2,0,international,AFC Asian Cup,true
+2024-02-07,CIV,COD,1,0,international,African Cup of Nations,false
+2024-02-07,QAT,IRN,3,2,international,AFC Asian Cup,false
+2024-02-10,QAT,JOR,3,1,international,AFC Asian Cup,false
+2024-02-10,RSA,COD,0,0,international,African Cup of Nations,true
+2024-03-21,PAN,MEX,0,3,international,CONCACAF Nations League,true
+2024-03-21,POR,SWE,5,2,international,Friendly,false
+2024-03-22,EGY,NZL,1,0,international,FIFA Series,false
+2024-03-22,ESP,COL,0,1,international,Friendly,true
+2024-03-22,NED,SCO,4,0,international,Friendly,false
+2024-03-23,ENG,BRA,0,1,international,Friendly,false
+2024-03-23,FRA,GER,0,2,international,Friendly,false
+2024-03-23,TUN,CRO,0,0,international,FIFA Series,true
+2024-03-24,USA,MEX,2,0,international,CONCACAF Nations League,false
+2024-03-26,ALG,RSA,3,3,international,FIFA Series,false
+2024-03-26,AUT,TUR,6,1,international,Friendly,false
+2024-03-26,CIV,URU,2,1,international,Friendly,true
+2024-03-26,EGY,CRO,2,4,international,FIFA Series,false
+2024-03-26,ENG,BEL,2,2,international,Friendly,false
+2024-03-26,ESP,BRA,3,3,international,Friendly,false
+2024-03-26,GER,NED,2,1,international,Friendly,false
+2024-03-26,NZL,TUN,0,0,international,FIFA Series,true
+2024-06-03,ENG,BIH,3,0,international,Friendly,false
+2024-06-05,MEX,URU,0,4,international,Friendly,true
+2024-06-06,NED,CAN,4,0,international,Friendly,false
+2024-06-06,SEN,COD,1,1,international,FIFA World Cup qualification,false
+2024-06-08,MEX,BRA,2,3,international,Friendly,true
+2024-06-08,POR,CRO,1,2,international,Friendly,false
+2024-06-08,SUI,AUT,1,1,international,Friendly,false
+2024-06-08,USA,COL,1,5,international,Friendly,false
+2024-06-09,ARG,ECU,1,0,international,Friendly,true
+2024-06-09,FRA,CAN,0,0,international,Friendly,false
+2024-06-11,IRN,UZB,0,0,international,FIFA World Cup qualification,false
+2024-06-11,SAU,JOR,1,2,international,FIFA World Cup qualification,false
+2024-06-12,USA,BRA,1,1,international,Friendly,false
+2024-06-14,GER,SCO,5,1,international,UEFA Euro,false
+2024-06-15,ESP,CRO,3,0,international,UEFA Euro,true
+2024-06-16,PAN,PAR,0,1,international,Friendly,false
+2024-06-17,AUT,FRA,0,1,international,UEFA Euro,true
+2024-06-19,SCO,SUI,1,1,international,UEFA Euro,true
+2024-06-20,ARG,CAN,2,0,international,Copa América,true
+2024-06-21,NED,FRA,0,0,international,UEFA Euro,true
+2024-06-22,TUR,POR,0,3,international,UEFA Euro,true
+2024-06-23,GER,SUI,1,1,international,UEFA Euro,false
+2024-06-23,URU,PAN,3,1,international,Copa América,true
+2024-06-24,COL,PAR,2,1,international,Copa América,true
+2024-06-25,NED,AUT,2,3,international,UEFA Euro,true
+2024-06-27,USA,PAN,1,2,international,Copa América,false
+2024-06-28,PAR,BRA,1,4,international,Copa América,true
+2024-06-30,MEX,ECU,0,0,international,Copa América,true
+2024-07-01,FRA,BEL,1,0,international,UEFA Euro,true
+2024-07-01,USA,URU,0,1,international,Copa América,false
+2024-07-02,AUT,TUR,1,2,international,UEFA Euro,true
+2024-07-02,BRA,COL,1,1,international,Copa América,true
+2024-07-04,ARG,ECU,1,1,international,Copa América,true
+2024-07-05,GER,ESP,1,2,international,UEFA Euro,false
+2024-07-05,POR,FRA,0,0,international,UEFA Euro,true
+2024-07-06,COL,PAN,5,0,international,Copa América,true
+2024-07-06,ENG,SUI,1,1,international,UEFA Euro,true
+2024-07-06,NED,TUR,2,1,international,UEFA Euro,true
+2024-07-06,URU,BRA,0,0,international,Copa América,true
+2024-07-09,ARG,CAN,2,0,international,Copa América,true
+2024-07-09,ESP,FRA,2,1,international,UEFA Euro,true
+2024-07-10,NED,ENG,1,2,international,UEFA Euro,true
+2024-07-10,URU,COL,0,1,international,Copa América,true
+2024-07-13,CAN,URU,2,2,international,Copa América,true
+2024-07-14,ARG,COL,1,0,international,Copa América,true
+2024-07-14,ESP,ENG,2,1,international,UEFA Euro,true
+2024-09-05,POR,CRO,2,1,international,UEFA Nations League,false
+2024-09-06,BRA,ECU,1,0,international,FIFA World Cup qualification,false
+2024-09-06,EGY,CPV,3,0,international,African Cup of Nations qualification,false
+2024-09-06,URU,PAR,0,0,international,FIFA World Cup qualification,false
+2024-09-07,MEX,NZL,3,0,international,Friendly,true
+2024-09-07,NED,BIH,5,2,international,UEFA Nations League,false
+2024-09-07,USA,CAN,1,2,international,Friendly,false
+2024-09-08,POR,SCO,2,1,international,UEFA Nations League,false
+2024-09-08,SUI,ESP,1,4,international,UEFA Nations League,false
+2024-09-09,FRA,BEL,2,0,international,UEFA Nations League,false
+2024-09-09,NOR,AUT,2,1,international,UEFA Nations League,false
+2024-09-10,COL,ARG,2,1,international,FIFA World Cup qualification,false
+2024-09-10,MEX,CAN,0,0,international,Friendly,true
+2024-09-10,NED,GER,2,2,international,UEFA Nations League,false
+2024-09-10,PAR,BRA,1,0,international,FIFA World Cup qualification,false
+2024-09-10,USA,NZL,1,1,international,Friendly,false
+2024-10-10,ECU,PAR,0,0,international,FIFA World Cup qualification,false
+2024-10-10,JOR,KOR,0,2,international,FIFA World Cup qualification,false
+2024-10-10,SAU,JPN,0,2,international,FIFA World Cup qualification,false
+2024-10-10,UZB,IRN,0,0,international,FIFA World Cup qualification,false
+2024-10-11,BIH,GER,1,2,international,UEFA Nations League,false
+2024-10-12,CRO,SCO,2,1,international,UEFA Nations League,false
+2024-10-12,USA,PAN,2,0,international,Friendly,false
+2024-10-13,AUT,NOR,5,1,international,UEFA Nations League,false
+2024-10-14,BEL,FRA,1,2,international,UEFA Nations League,false
+2024-10-14,GER,NED,1,0,international,UEFA Nations League,false
+2024-10-15,CAN,PAN,2,1,international,Friendly,false
+2024-10-15,IRN,QAT,4,1,international,FIFA World Cup qualification,true
+2024-10-15,JPN,AUS,1,1,international,FIFA World Cup qualification,false
+2024-10-15,KOR,IRQ,3,2,international,FIFA World Cup qualification,false
+2024-10-15,MEX,USA,2,0,international,Friendly,false
+2024-10-15,SCO,POR,0,0,international,UEFA Nations League,false
+2024-10-15,URU,ECU,0,0,international,FIFA World Cup qualification,false
+2024-11-14,AUS,SAU,0,0,international,FIFA World Cup qualification,false
+2024-11-14,IRQ,JOR,0,0,international,FIFA World Cup qualification,false
+2024-11-14,PAR,ARG,2,1,international,FIFA World Cup qualification,false
+2024-11-14,QAT,UZB,3,2,international,FIFA World Cup qualification,false
+2024-11-15,CPV,EGY,1,1,international,African Cup of Nations qualification,false
+2024-11-15,SCO,CRO,1,0,international,UEFA Nations League,false
+2024-11-15,URU,COL,3,2,international,FIFA World Cup qualification,false
+2024-11-16,GER,BIH,7,0,international,UEFA Nations League,false
+2024-11-18,CRO,POR,1,1,international,UEFA Nations League,false
+2024-11-18,ESP,SUI,3,2,international,UEFA Nations League,false
+2024-11-19,BIH,NED,1,1,international,UEFA Nations League,false
+2024-11-19,BRA,URU,1,1,international,FIFA World Cup qualification,false
+2024-11-19,COL,ECU,0,1,international,FIFA World Cup qualification,false
+2024-12-28,IRQ,SAU,1,3,international,Gulf Cup,true
+2025-01-22,UZB,JOR,0,0,international,Friendly,true
+2025-03-20,BRA,COL,2,1,international,FIFA World Cup qualification,false
+2025-03-20,CAN,MEX,0,2,international,CONCACAF Nations League,true
+2025-03-20,CRO,FRA,2,0,international,UEFA Nations League,false
+2025-03-20,NED,ESP,2,2,international,UEFA Nations League,false
+2025-03-20,USA,PAN,0,1,international,CONCACAF Nations League,false
+2025-03-21,URU,ARG,0,1,international,FIFA World Cup qualification,false
+2025-03-23,ESP,NED,3,3,international,UEFA Nations League,false
+2025-03-23,FRA,CRO,2,0,international,UEFA Nations League,false
+2025-03-23,PAN,MEX,1,2,international,CONCACAF Nations League,true
+2025-03-23,USA,CAN,1,2,international,CONCACAF Nations League,false
+2025-03-25,ARG,BRA,4,1,international,FIFA World Cup qualification,false
+2025-03-25,COL,PAR,2,2,international,FIFA World Cup qualification,false
+2025-03-25,IRN,UZB,2,2,international,FIFA World Cup qualification,false
+2025-03-25,JPN,SAU,0,0,international,FIFA World Cup qualification,false
+2025-03-25,KOR,JOR,1,1,international,FIFA World Cup qualification,false
+2025-05-30,SAU,JOR,2,0,international,Friendly,false
+2025-06-04,GER,POR,1,2,international,UEFA Nations League,false
+2025-06-05,AUS,JPN,1,0,international,FIFA World Cup qualification,false
+2025-06-05,ECU,BRA,0,0,international,FIFA World Cup qualification,false
+2025-06-05,ESP,FRA,5,4,international,UEFA Nations League,true
+2025-06-05,IRQ,KOR,0,2,international,FIFA World Cup qualification,false
+2025-06-05,PAR,URU,2,0,international,FIFA World Cup qualification,false
+2025-06-05,QAT,IRN,1,0,international,FIFA World Cup qualification,false
+2025-06-06,MAR,TUN,2,0,international,Friendly,false
+2025-06-07,CIV,NZL,0,1,international,Canadian Shield,true
+2025-06-07,MEX,SUI,2,4,international,Friendly,true
+2025-06-07,USA,TUR,1,2,international,Friendly,false
+2025-06-08,GER,FRA,0,2,international,UEFA Nations League,false
+2025-06-08,POR,ESP,2,2,international,UEFA Nations League,true
+2025-06-10,ARG,COL,1,1,international,FIFA World Cup qualification,false
+2025-06-10,BRA,PAR,1,0,international,FIFA World Cup qualification,false
+2025-06-10,CAN,CIV,0,0,international,Canadian Shield,false
+2025-06-10,ENG,SEN,1,3,international,Friendly,false
+2025-06-10,HAI,CUW,1,5,international,FIFA World Cup qualification,true
+2025-06-10,JOR,IRQ,0,1,international,FIFA World Cup qualification,false
+2025-06-10,MEX,TUR,1,0,international,Friendly,true
+2025-06-10,SAU,AUS,1,2,international,FIFA World Cup qualification,false
+2025-06-10,SWE,ALG,4,3,international,Friendly,false
+2025-06-10,USA,SUI,0,4,international,Friendly,false
+2025-06-10,UZB,QAT,3,0,international,FIFA World Cup qualification,false
+2025-06-15,HAI,SAU,0,1,international,Gold Cup,true
+2025-06-19,USA,SAU,1,0,international,Gold Cup,false
+2025-06-21,CUW,CAN,1,1,international,Gold Cup,true
+2025-06-22,USA,HAI,2,1,international,Gold Cup,false
+2025-06-28,MEX,SAU,2,0,international,Gold Cup,true
+2025-07-06,USA,MEX,1,2,international,Gold Cup,false
+2025-09-04,PAR,ECU,0,0,international,FIFA World Cup qualification,false
+2025-09-05,AUS,NZL,1,0,international,Soccer Ashes,false
+2025-09-06,MEX,JPN,0,0,international,Friendly,true
+2025-09-06,USA,KOR,0,2,international,Friendly,false
+2025-09-07,TUR,ESP,0,6,international,FIFA World Cup qualification,false
+2025-09-09,BIH,AUT,1,2,international,FIFA World Cup qualification,false
+2025-09-09,COD,SEN,2,3,international,FIFA World Cup qualification,false
+2025-09-09,ECU,ARG,1,0,international,FIFA World Cup qualification,false
+2025-09-09,MEX,KOR,2,2,international,Friendly,true
+2025-09-09,NZL,AUS,1,3,international,Soccer Ashes,false
+2025-09-09,USA,JPN,2,0,international,Friendly,false
+2025-10-10,CAN,AUS,0,1,international,Friendly,false
+2025-10-10,JPN,PAR,2,2,international,Kirin Cup,false
+2025-10-10,KOR,BRA,0,5,international,Friendly,false
+2025-10-10,SWE,SUI,0,2,international,FIFA World Cup qualification,false
+2025-10-10,USA,ECU,1,1,international,Friendly,false
+2025-10-11,MEX,COL,0,4,international,Friendly,true
+2025-10-13,UZB,URU,1,2,international,Friendly,true
+2025-10-14,CAN,COL,0,0,international,Friendly,true
+2025-10-14,JPN,BRA,3,2,international,Kirin Cup,false
+2025-10-14,KOR,PAR,2,0,international,Friendly,false
+2025-10-14,MEX,ECU,1,1,international,Friendly,false
+2025-10-14,NOR,NZL,1,1,international,Friendly,false
+2025-10-14,SAU,IRQ,0,0,international,FIFA World Cup qualification,false
+2025-10-14,USA,AUS,2,1,international,Friendly,false
+2025-11-13,CAN,ECU,0,0,international,Friendly,false
+2025-11-13,IRN,CPV,0,0,international,Al Ain International Cup,true
+2025-11-14,JPN,GHA,2,0,international,Kirin Cup,false
+2025-11-14,SAU,CIV,1,0,international,Friendly,false
+2025-11-14,TUN,JOR,3,2,international,Friendly,false
+2025-11-14,UZB,EGY,2,0,international,Al Ain International Cup,true
+2025-11-15,BRA,SEN,2,0,international,Friendly,true
+2025-11-15,COL,NZL,2,1,international,Friendly,true
+2025-11-15,MEX,URU,0,0,international,Friendly,false
+2025-11-15,SUI,SWE,4,1,international,FIFA World Cup qualification,false
+2025-11-15,USA,PAR,2,1,international,Friendly,false
+2025-11-17,CPV,EGY,1,1,international,Al Ain International Cup,true
+2025-11-18,AUT,BIH,1,1,international,FIFA World Cup qualification,false
+2025-11-18,BRA,TUN,1,1,international,Friendly,true
+2025-11-18,COL,AUS,3,0,international,Friendly,true
+2025-11-18,ECU,NZL,2,0,international,Friendly,true
+2025-11-18,ESP,TUR,2,2,international,FIFA World Cup qualification,false
+2025-11-18,IRN,UZB,0,0,international,Al Ain International Cup,true
+2025-11-18,KOR,GHA,1,0,international,Friendly,false
+2025-11-18,MEX,PAR,1,2,international,Friendly,true
+2025-11-18,SAU,ALG,0,2,international,Friendly,false
+2025-11-18,USA,URU,5,1,international,Friendly,false
+2025-12-07,QAT,TUN,0,3,international,Arab Cup,false
+2025-12-08,MAR,SAU,1,0,international,Arab Cup,true
+2025-12-09,ALG,IRQ,2,0,international,Arab Cup,true
+2025-12-09,EGY,JOR,0,3,international,Arab Cup,true
+2025-12-12,JOR,IRQ,1,0,international,Arab Cup,true
+2025-12-15,SAU,JOR,0,1,international,Arab Cup,true
+2025-12-18,JOR,MAR,2,3,international,Arab Cup,true
+2025-12-26,EGY,RSA,1,0,international,African Cup of Nations,true
+2025-12-27,SEN,COD,1,1,international,African Cup of Nations,true
+2026-01-06,ALG,COD,1,0,international,African Cup of Nations,true
+2026-01-10,EGY,CIV,3,2,international,African Cup of Nations,true
+2026-01-14,SEN,EGY,1,0,international,African Cup of Nations,true
+2026-01-18,MAR,SEN,3,0,international,African Cup of Nations,false
+2026-01-22,PAN,MEX,0,1,international,Friendly,false
+2026-03-26,BRA,FRA,1,2,international,Friendly,true
+2026-03-26,COL,CRO,1,2,international,Friendly,true
+2026-03-27,AUT,GHA,5,1,international,Friendly,false
+2026-03-27,ENG,URU,1,1,international,Friendly,false
+2026-03-27,MAR,ECU,1,1,international,Friendly,true
+2026-03-27,NED,NOR,2,1,international,Friendly,false
+2026-03-27,RSA,PAN,1,1,international,Friendly,false
+2026-03-27,SAU,EGY,0,4,international,Friendly,false
+2026-03-27,SUI,GER,3,4,international,Friendly,false
+2026-03-28,CIV,KOR,4,0,international,Friendly,true
+2026-03-28,HAI,TUN,0,1,international,Friendly,true
+2026-03-28,MEX,POR,0,0,international,Friendly,false
+2026-03-28,SCO,JPN,0,1,international,Friendly,false
+2026-03-28,USA,BEL,2,5,international,Friendly,false
+2026-03-29,COL,FRA,1,3,international,Friendly,true
+2026-03-30,GER,GHA,2,1,international,Friendly,false
+2026-03-31,ALG,URU,0,0,international,Friendly,true
+2026-03-31,AUS,CUW,5,1,international,FIFA Series,false
+2026-03-31,AUT,KOR,1,0,international,Friendly,false
+2026-03-31,BRA,CRO,3,1,international,Friendly,true
+2026-03-31,CAN,TUN,0,0,international,Friendly,false
+2026-03-31,CIV,SCO,1,0,international,Friendly,true
+2026-03-31,ENG,JPN,0,1,international,Friendly,false
+2026-03-31,ESP,EGY,0,0,international,Friendly,false
+2026-03-31,MAR,PAR,2,1,international,Friendly,true
+2026-03-31,MEX,BEL,1,1,international,Friendly,true
+2026-03-31,NED,ECU,1,1,international,Friendly,false
+2026-03-31,NOR,SUI,0,0,international,Friendly,false
+2026-03-31,RSA,PAN,1,2,international,Friendly,false
+2026-03-31,USA,POR,0,2,international,Friendly,false
+2026-05-22,MEX,GHA,2,0,international,Friendly,false
+2026-05-30,ECU,SAU,2,1,international,Friendly,true
+2026-05-30,MEX,AUS,1,0,international,Friendly,true
+2026-05-30,SCO,CUW,4,1,international,Friendly,false
+2026-05-31,BRA,PAN,6,2,international,Friendly,false
+2026-05-31,SUI,JOR,4,1,international,Friendly,false
+2026-05-31,USA,SEN,3,2,international,Friendly,false
+2026-06-01,AUT,TUN,1,0,international,Friendly,false
+2026-06-01,CAN,UZB,2,0,international,Friendly,false
+2026-06-01,NOR,SWE,3,1,international,Friendly,false
+2026-06-02,CRO,BEL,0,2,international,Friendly,false
+2026-06-02,HAI,NZL,4,0,international,Friendly,true
+2026-06-03,NED,ALG,0,1,international,Friendly,false
+2026-06-04,ESP,IRQ,1,1,international,Friendly,false
+2026-06-04,FRA,CIV,1,2,international,Friendly,false
+2026-06-06,AUS,SUI,1,1,international,Friendly,true
+2026-06-06,BEL,TUN,5,0,international,Friendly,false
+2026-06-06,BRA,EGY,2,1,international,Friendly,true
+2026-06-06,ENG,NZL,1,0,international,Friendly,true
+2026-06-06,PAN,BIH,1,1,international,Friendly,true
+2026-06-06,USA,GER,1,2,international,Friendly,false
+2026-06-07,JOR,COL,0,2,international,Friendly,true
+2026-06-07,MAR,NOR,1,1,international,Friendly,true
+2026-06-08,NED,UZB,2,1,international,Friendly,true
+2026-06-09,SAU,SEN,0,0,international,Friendly,true
