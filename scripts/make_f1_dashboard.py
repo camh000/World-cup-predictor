@@ -20,8 +20,12 @@ OUT = ROOT / "f1.html"
 
 TOTAL_RACES = 24      # 2026 calendar length (the dataset has no 2026 calendar file)
 N_SIMS = 20000
+# Calibrated on a walk-forward race backtest (scripts/validate_f1.py): scale=110
+# is winner-log-loss-optimal, and dnf_prob is lifted from 0.12 to 0.18 — the
+# measured DNF rate is 11.5% in 2025 but 23.4% in 2026 (new-regs attrition), so
+# 0.18 is a conservative season-weighted value that beats 0.12 at every scale.
 SCALE = 110.0
-DNF_PROB = 0.12
+DNF_PROB = 0.18
 
 
 def _flag_favicon() -> str:
