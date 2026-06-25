@@ -1,6 +1,6 @@
 # World Cup 2026 Sweepstake Odds
 
-_Model estimate as of 2026-06-19 (50,000 simulations from the current post-matchday ratings)._
+_Model estimate as of 2026-06-25 (50,000 simulations from the current post-matchday ratings)._
 
 Win chance = combined title probability of a person's team(s).
 
@@ -8,107 +8,107 @@ Win chance = combined title probability of a person's team(s).
 
 | # | Person | Win chance | Teams (best) |
 |---|--------|-----------:|--------------|
-| 1 | Caleb | 32.5% | Saudi Arabia, Argentina, Egypt (best: Argentina 32.4%) |
-| 2 | Willis | 21.0% | Spain, Qatar, Ivory Coast (best: Spain 20.9%) |
-| 3 | Max | 20.1% | France, Panama, DR Congo (best: France 20.1%) |
-| 4 | Oliver | 12.2% | Canada, England, Iran (best: England 12.1%) |
-| 5 | Liam | 3.0% | Ecuador, Germany, Australia (best: Germany 3.0%) |
-| 6 | Joey | 2.5% | Portugal, Switzerland, Cape Verde (best: Portugal 2.1%) |
-| 7 | Bailey | 2.5% | Uzbekistan, Netherlands, Paraguay (best: Netherlands 2.5%) |
-| 8 | Callum | 2.4% | Sweden, Czech Republic, Brazil (best: Brazil 2.2%) |
-| 9 | Jack | 1.4% | Belgium, Austria, Morocco (best: Morocco 0.6%) |
-| 10 | Cam | 1.0% | USA, Colombia, Curacao (best: Colombia 0.6%) |
-| 11 | Jeza | 0.5% | Uruguay, Mexico, South Korea (best: Uruguay 0.3%) |
-| 12 | Jake | 0.4% | Haiti, Norway, Iraq (best: Norway 0.4%) |
-| 13 | Tegan | 0.3% | Senegal, Tunisia, Japan (best: Japan 0.2%) |
-| 14 | Matt N | 0.2% | Croatia, Ghana, Turkey (best: Croatia 0.2%) |
-| 15 | Matt B | 0.1% | Scotland, Algeria, New Zealand (best: Scotland 0.1%) |
-| 16 | Jono | 0.0% | South Africa, Bosnia, Jordan (best: Bosnia 0.0%) |
+| 1 | Caleb | 18.8% | Saudi Arabia, Argentina, Egypt (best: Argentina 17.7%) |
+| 2 | Max | 14.1% | France, Panama, DR Congo (best: France 13.7%) |
+| 3 | Willis | 13.7% | Spain, Qatar, Ivory Coast (best: Spain 13.0%) |
+| 4 | Oliver | 8.3% | Canada, England, Iran (best: England 7.2%) |
+| 5 | Joey | 7.3% | Portugal, Switzerland, Cape Verde (best: Portugal 5.0%) |
+| 6 | Callum | 6.1% | Sweden, Czech Republic, Brazil (best: Brazil 5.4%) |
+| 7 | Jack | 5.7% | Belgium, Austria, Morocco (best: Morocco 2.9%) |
+| 8 | Bailey | 5.6% | Uzbekistan, Netherlands, Paraguay (best: Netherlands 5.0%) |
+| 9 | Cam | 5.3% | USA, Colombia, Curacao (best: Colombia 3.2%) |
+| 10 | Jeza | 3.7% | Uruguay, Mexico, South Korea (best: Mexico 2.4%) |
+| 11 | Liam | 3.7% | Ecuador, Germany, Australia (best: Germany 2.4%) |
+| 12 | Matt N | 2.5% | Croatia, Ghana, Turkey (best: Croatia 1.8%) |
+| 13 | Tegan | 2.3% | Senegal, Tunisia, Japan (best: Japan 1.8%) |
+| 14 | Jake | 1.6% | Haiti, Norway, Iraq (best: Norway 1.6%) |
+| 15 | Matt B | 0.7% | Scotland, Algeria, New Zealand (best: Algeria 0.5%) |
+| 16 | Jono | 0.6% | South Africa, Bosnia, Jordan (best: South Africa 0.3%) |
 
 ## Work sweepstake (81 people)
 
 | # | Person | Win chance | Team(s) |
 |---|--------|-----------:|---------|
-| 1 | Emma W | 32.39% | Argentina |
-| 2 | Lauren C | 32.39% | Argentina, Panama |
-| 3 | Angela H | 20.86% | Spain, Bosnia and Herzegovina |
-| 4 | Tim A | 20.85% | Spain |
-| 5 | Isaac W | 20.12% | France |
-| 6 | Jason H | 20.12% | France |
-| 7 | Helena Y | 12.07% | England |
-| 8 | Sophie J | 12.07% | England |
-| 9 | Andrew H | 2.98% | Germany |
-| 10 | Chris W | 2.98% | Germany |
-| 11 | Lee H | 2.47% | Netherlands |
-| 12 | Mark L | 2.47% | Netherlands |
-| 13 | Karl H | 2.22% | Brazil |
-| 14 | Nicola T | 2.22% | Brazil |
-| 15 | Ella T | 2.13% | Portugal |
-| 16 | Rachael L | 2.13% | Portugal |
-| 17 | Ryan G | 0.64% | Colombia, Ghana |
-| 18 | Stuart H | 0.63% | Colombia |
-| 19 | Beckie W | 0.61% | Morocco |
-| 20 | Laura F | 0.61% | Morocco |
-| 21 | Trav W | 0.61% | Belgium |
-| 22 | Will E | 0.61% | Belgium |
-| 23 | Chris H | 0.42% | Norway |
-| 24 | Mel S | 0.42% | Norway |
-| 25 | Josh B | 0.40% | Switzerland, Scotland |
-| 26 | Dan H | 0.40% | United States |
-| 27 | Ryan K | 0.40% | United States, Uzbekistan |
-| 28 | Emma T | 0.37% | Mexico, Austria |
-| 29 | Matt B | 0.35% | Switzerland |
-| 30 | David T | 0.34% | Uruguay, Senegal |
-| 31 | Jaydene V | 0.30% | Uruguay |
-| 32 | Lynne S | 0.22% | Japan |
-| 33 | Sheril T | 0.22% | Japan |
-| 34 | Steve G | 0.19% | Sweden |
-| 35 | Sue M | 0.19% | Sweden |
-| 36 | Andrew W | 0.17% | Austria |
-| 37 | Kara K | 0.15% | Croatia |
-| 38 | Man-Tong L | 0.15% | Croatia |
-| 39 | Toni R | 0.13% | Ivory Coast |
-| 40 | Wayne R | 0.13% | Ivory Coast |
-| 41 | Andy B | 0.08% | Scotland, Algeria, Turkey, New Zealand |
-| 42 | Jamie T | 0.07% | Canada, Cape Verde |
-| 43 | Emily M | 0.07% | Egypt |
-| 44 | Oliver F | 0.07% | Egypt |
-| 45 | Amirah S | 0.07% | Canada |
-| 46 | Alice N | 0.06% | Senegal, Algeria |
-| 47 | Adam T | 0.03% | South Korea |
-| 48 | Dom A | 0.03% | South Korea |
-| 49 | Rushali K | 0.03% | Iran |
-| 50 | Zoe J | 0.03% | Iran, Panama, Qatar |
-| 51 | Laura E | 0.02% | DR Congo |
-| 52 | Luke C | 0.02% | DR Congo |
-| 53 | Andy W | 0.01% | Ghana |
-| 54 | Suzanne W | 0.01% | Ecuador |
-| 55 | Sylwia R | 0.01% | Ecuador |
-| 56 | Simon P | 0.01% | Australia |
-| 57 | Tony B | 0.01% | Australia |
-| 58 | James H | 0.01% | Turkey |
-| 59 | Brittany B | 0.00% | Czechia |
-| 60 | James We | 0.00% | Bosnia and Herzegovina |
-| 61 | Khalid E | 0.00% | Czechia |
-| 62 | Cameron H | 0.00% | Tunisia |
-| 63 | Carly T | 0.00% | South Africa |
-| 64 | Jack R | 0.00% | Tunisia |
-| 65 | James Wi | 0.00% | Cape Verde |
-| 66 | Josh C | 0.00% | Paraguay |
-| 67 | Rachael T | 0.00% | South Africa |
-| 68 | Steve D | 0.00% | Paraguay |
-| 69 | Aisling G | 0.00% | New Zealand |
-| 70 | Alice K | 0.00% | Curacao |
-| 71 | Cameron S | 0.00% | Haiti |
-| 72 | Craig S | 0.00% | Saudi Arabia |
-| 73 | David F | 0.00% | Uzbekistan |
-| 74 | Devon K | 0.00% | Iraq |
-| 75 | Helen B | 0.00% | Jordan |
-| 76 | John W | 0.00% | Curacao |
-| 77 | Karin S | 0.00% | Haiti |
-| 78 | Kate C | 0.00% | Jordan |
-| 79 | Katie M | 0.00% | Iraq |
-| 80 | Lydia M | 0.00% | Saudi Arabia |
-| 81 | Sue N | 0.00% | Qatar |
+| 1 | Lauren C | 17.84% | Argentina, Panama |
+| 2 | Emma W | 17.75% | Argentina |
+| 3 | Isaac W | 13.71% | France |
+| 4 | Jason H | 13.71% | France |
+| 5 | Angela H | 13.23% | Spain, Bosnia and Herzegovina |
+| 6 | Tim A | 12.99% | Spain |
+| 7 | Helena Y | 7.20% | England |
+| 8 | Sophie J | 7.20% | England |
+| 9 | Karl H | 5.39% | Brazil |
+| 10 | Nicola T | 5.39% | Brazil |
+| 11 | Ella T | 5.05% | Portugal |
+| 12 | Rachael L | 5.05% | Portugal |
+| 13 | Lee H | 5.03% | Netherlands |
+| 14 | Mark L | 5.03% | Netherlands |
+| 15 | Ryan G | 3.72% | Colombia, Ghana |
+| 16 | Stuart H | 3.25% | Colombia |
+| 17 | Emma T | 3.19% | Mexico, Austria |
+| 18 | Beckie W | 2.90% | Morocco |
+| 19 | Laura F | 2.90% | Morocco |
+| 20 | Josh B | 2.41% | Switzerland, Scotland |
+| 21 | Andrew H | 2.41% | Germany |
+| 22 | Chris W | 2.41% | Germany |
+| 23 | Matt B | 2.14% | Switzerland |
+| 24 | Ryan K | 2.10% | United States, Uzbekistan |
+| 25 | Trav W | 2.02% | Belgium |
+| 26 | Will E | 2.02% | Belgium |
+| 27 | Dan H | 2.01% | United States |
+| 28 | Kara K | 1.82% | Croatia |
+| 29 | Lynne S | 1.82% | Japan |
+| 30 | Man-Tong L | 1.82% | Croatia |
+| 31 | Sheril T | 1.82% | Japan |
+| 32 | Chris H | 1.62% | Norway |
+| 33 | Mel S | 1.62% | Norway |
+| 34 | David T | 1.43% | Uruguay, Senegal |
+| 35 | Jaydene V | 1.01% | Uruguay |
+| 36 | Andy B | 0.95% | Algeria, Scotland, Turkey, New Zealand |
+| 37 | Emily M | 0.93% | Egypt |
+| 38 | Oliver F | 0.93% | Egypt |
+| 39 | Alice N | 0.87% | Algeria, Senegal |
+| 40 | Andrew W | 0.81% | Austria |
+| 41 | Zoe J | 0.79% | Iran, Panama, Qatar |
+| 42 | Suzanne W | 0.74% | Ecuador |
+| 43 | Sylwia R | 0.74% | Ecuador |
+| 44 | Rushali K | 0.68% | Iran |
+| 45 | Toni R | 0.65% | Ivory Coast |
+| 46 | Wayne R | 0.65% | Ivory Coast |
+| 47 | Steve G | 0.58% | Sweden |
+| 48 | Sue M | 0.58% | Sweden |
+| 49 | Simon P | 0.55% | Australia |
+| 50 | Tony B | 0.55% | Australia |
+| 51 | Jamie T | 0.54% | Canada, Cape Verde |
+| 52 | Josh C | 0.48% | Paraguay |
+| 53 | Steve D | 0.48% | Paraguay |
+| 54 | Andy W | 0.47% | Ghana |
+| 55 | Amirah S | 0.45% | Canada |
+| 56 | Adam T | 0.33% | South Korea |
+| 57 | Dom A | 0.33% | South Korea |
+| 58 | Carly T | 0.30% | South Africa |
+| 59 | Rachael T | 0.30% | South Africa |
+| 60 | Laura E | 0.26% | DR Congo |
+| 61 | Luke C | 0.26% | DR Congo |
+| 62 | James We | 0.24% | Bosnia and Herzegovina |
+| 63 | James H | 0.21% | Turkey |
+| 64 | Brittany B | 0.14% | Czechia |
+| 65 | Khalid E | 0.14% | Czechia |
+| 66 | Craig S | 0.11% | Saudi Arabia |
+| 67 | Lydia M | 0.11% | Saudi Arabia |
+| 68 | David F | 0.09% | Uzbekistan |
+| 69 | James Wi | 0.09% | Cape Verde |
+| 70 | Cameron H | 0.06% | Tunisia |
+| 71 | Jack R | 0.06% | Tunisia |
+| 72 | Helen B | 0.04% | Jordan |
+| 73 | Kate C | 0.04% | Jordan |
+| 74 | Sue N | 0.02% | Qatar |
+| 75 | Aisling G | 0.02% | New Zealand |
+| 76 | Devon K | 0.01% | Iraq |
+| 77 | Katie M | 0.01% | Iraq |
+| 78 | Alice K | 0.00% | Curacao |
+| 79 | John W | 0.00% | Curacao |
+| 80 | Cameron S | 0.00% | Haiti |
+| 81 | Karin S | 0.00% | Haiti |
 
-_Tournament favourite: Argentina (32.4%)._
+_Tournament favourite: Argentina (17.7%)._
