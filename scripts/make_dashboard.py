@@ -169,8 +169,10 @@ def main() -> None:
     clv_data = _clv_scoreboard(paths, preds, gamma)
     outright = _load_outright(paths)
 
+    bracket_html = _knockout_bracket(base, params, ratings, name)
+
     html = _render(df, name, base, adv, win, preds, summary, friend_rows,
-                   upcoming, bet, calib, outright, clinch, clv_data)
+                   upcoming, bet, calib, outright, clinch, clv_data, bracket_html)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     print(f"Wrote {OUT}")
@@ -373,6 +375,7 @@ def _clv_scoreboard(paths, preds, gamma=1.0):
         bets.append({"fix": k, "sel": sel, "open": open_o[sel], "close": close_o[sel],
                      "clv": cval, "won": won, "pl": (open_o[sel] - 1.0) if won else -1.0})
     return {"n_snapshots": len(timestamps), "first": min(timestamps)[:10] if timestamps else None,
+            "last": max(timestamps)[:10] if timestamps else None,
             "n_tracked": len(snaps), "n_pairs": n_pairs, "bets": bets}
 
 
@@ -428,7 +431,75 @@ def _clinch_status(base, adv, played_pairs):
     return status
 
 
-def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright, clinch, clv_data) -> str:
+def group_stage_complete(base) -> bool:
+    """True once every team has played all three of its group games."""
+    return bool(base) and all(
+        s.played >= 3 for tbl in base.values() for s in tbl.values())
+
+
+def _knockout_bracket(base, params, ratings, name) -> str:
+    """Round-of-32 bracket HTML, shown once the group stage is complete.
+
+    Returns "" until every group game is played. Resolves the official 2026
+    bracket (including the eight best third-placed teams, via the engine's FIFA
+    allocation) from the final standings, then shows the model's predicted winner
+    of each tie. Draws are split 50/50 into the knockout win probability, since a
+    knockout tie cannot end level (extra time / penalties decide it).
+    """
+    if not group_stage_complete(base):
+        return ""
+    from wcpredictor.history import forecast
+    from wcpredictor.tournament import R32_2026, _build_r32
+
+    winners, runners, thirds_by_group = {}, {}, {}
+    for g, tbl in base.items():
+        ordered = sorted(tbl.values(), key=lambda s: s.sort_key())
+        winners[g], runners[g], thirds_by_group[g] = (
+            ordered[0].team_id, ordered[1].team_id, ordered[2])
+    ties = _build_r32(R32_2026, winners, runners, thirds_by_group)
+
+    def tie_box(i, h, a):
+        probs, _ = forecast(ratings, params, h, a, True)
+        ph, pa = probs[0] + 0.5 * probs[1], probs[2] + 0.5 * probs[1]
+        home_through = ph >= pa
+        def cell(tid, p, win):
+            nm = (f"<b>{name.get(tid, tid)}</b>" if win else name.get(tid, tid))
+            arrow = "&#9656;" if win else "&nbsp;"
+            return (f'<tr bgcolor="{"#CCFFCC" if win else "#FFFFFF"}">'
+                    f'<td>{arrow}&nbsp;{nm}</td>'
+                    f'<td align="center"><font size="1">{p*100:.0f}%</font></td></tr>')
+        return (f'<table border="1" cellpadding="2" cellspacing="0" width="220" '
+                f'bgcolor="#FFFFFF"><tr bgcolor="#000080"><td colspan="2">'
+                f'<font color="#FFFF00" size="1">&nbsp;Match {73 + i} &#8212; Round of 32'
+                f'</font></td></tr>{cell(h, ph, home_through)}{cell(a, pa, not home_through)}'
+                f'</table>')
+
+    # Two columns = the two halves of the draw (adjacent ties meet next round).
+    left = "".join(tie_box(i, h, a) for i, (h, a) in enumerate(ties[:8]))
+    right = "".join(tie_box(i + 8, h, a) for i, (h, a) in enumerate(ties[8:]))
+    return (
+        '<h2><font color="#FFFFFF">&#127942; KNOCKOUT BRACKET &#8212; ROUND OF 32</font></h2>'
+        '<p><font size="1" face="Courier New">The group stage is done &#8212; here are the '
+        'next matches. Each box shows the model&rsquo;s knockout win probability (draws split '
+        '50/50 for extra time / penalties); the <b>likely winner</b> is highlighted. The eight '
+        'best third-placed teams are slotted by FIFA&rsquo;s allocation table. The two columns '
+        'are the two halves of the draw.</font></p>'
+        f'<table cellpadding="8"><tr><td valign="top">{left}</td>'
+        f'<td valign="top">{right}</td></tr></table>')
+
+
+def _fmt_date(iso: str | None) -> str | None:
+    """ISO 'YYYY-MM-DD' -> human '20 Jun 2026' (None passes through)."""
+    if not iso:
+        return None
+    try:
+        d = datetime.strptime(iso[:10], "%Y-%m-%d")
+    except ValueError:
+        return iso
+    return f"{d.day} {d:%b %Y}"
+
+
+def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet, calib, outright, clinch, clv_data, bracket_html="") -> str:
     updated = datetime.utcnow().strftime("%A %d %B %Y, %H:%M UTC")
     fav = _favicon()
     cur = _cursor()
@@ -436,6 +507,14 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
     from wcpredictor.betting import devig_market
     _ids = list(outright)
     mkt_champ = dict(zip(_ids, devig_market([outright[t] for t in _ids])))
+
+    # Odds source/date, derived from the data so captions never hard-code a stale
+    # date or provider once the live snapshots replace the committed sample.
+    odds_asof = _fmt_date(clv_data.get("last") or clv_data.get("first"))
+    odds_src = (f"real bookmaker odds, as of {odds_asof}" if odds_asof
+                else "real bookmaker odds")
+    outright_book_pct = (sum(1.0 / o for o in outright.values()) * 100
+                         if outright else None)
 
     # Softer market: outright-winner value. Shrink the model's champion prob toward
     # the (de-vigged) market, then back the raw outright price when a big edge
@@ -486,8 +565,10 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
                       f'<b>{fav_model*100:.0f}%</b> vs the market&rsquo;s <b>{fav_mkt*100:.0f}%</b>.')
     else:
         champ_lean = (f'The model makes {fav_name} favourite at <b>{fav_model*100:.0f}%</b>.')
-    champ_caption = (f'Model vs bookies&rsquo; winner market (oddschecker, 20 Jun). {champ_lean} Outright '
-                     f'&quot;best odds&quot; sum to ~94%, so the de-vig is approximate.')
+    asof = f' (as of {odds_asof})' if odds_asof else ''
+    book_sum = (f' Outright &quot;best odds&quot; sum to ~{outright_book_pct:.0f}%, so the de-vig '
+                f'is approximate.' if outright_book_pct else '')
+    champ_caption = (f'Model vs bookies&rsquo; winner market{asof}. {champ_lean}{book_sum}')
     champ_rows = ""
     for i, r in enumerate(df.head(12).itertuples()):
         m = mkt_champ.get(r.team_id)
@@ -568,6 +649,25 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
     rot_note = (" &dagger; = likely to rotate (already qualified or eliminated), so its rating is "
                 "regressed toward the field." if any_rotation else "")
 
+    # The "remaining group-stage matches" table empties out once the group stage
+    # finishes; drop the whole section then (the knockout bracket takes over above).
+    if up_rows:
+        upcoming_section = (
+            '<h2><font color="#FFFFFF">&#128302; REMAINING GROUP-STAGE MATCHES &#8212; PREDICTED</font></h2>'
+            '<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">'
+            '<tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;Kickoff (UTC)</font></th>'
+            '<th align="left"><font color="#FFFF00">&nbsp;Match</font></th>'
+            '<th><font color="#FFFF00">Win / Draw / Win %</font></th>'
+            '<th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th>'
+            '<th><font color="#FFFF00">Model vs bookies*</font></th></tr>'
+            f'{up_rows}</table>'
+            '<p><font size="1" face="Courier New">% = home win / draw / away win (calibrated). '
+            'xScore = single most-likely scoreline. * = the model\'s biggest disagreement with '
+            f'{odds_src} &#8212; a diagnostic, not a tip; see the calibration health check below.'
+            f'{rot_note}</font></p>')
+    else:
+        upcoming_section = ""
+
     # Live value bets: priced upcoming fixtures where the model sees +EV.
     from wcpredictor.betting import devig, ev_per_unit
     from wcpredictor.calibration import blend
@@ -614,7 +714,7 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
                     'Realized profit/loss will appear here as the fixtures above are played and results '
                     'recorded.</td></tr>')
         bet_verdict = ("No priced game has settled yet, so there is nothing to bank &#8212; the real test starts "
-                       "when the 20 Jun fixtures finish. The structural calibration fixes are in (the elite "
+                       "once priced fixtures finish. The structural calibration fixes are in (the elite "
                        "over-confidence and the silly top-heavy outright are gone), but the model still "
                        "<i>disagrees</i> with the bookies on most games, and history says that is mostly model "
                        "error, not value. Watch this space for realized profit/loss &#8212; and only believe it "
@@ -655,9 +755,9 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
             f'snapshots (an opening and a closing price) on a settled game. So far: '
             f'<b>{clv_data["n_snapshots"]}</b> snapshot(s) since {clv_data["first"] or "&ndash;"}, '
             f'<b>{clv_data["n_tracked"]}</b> fixtures tracked, <b>{clv_data["n_pairs"]}</b> with an '
-            'open+close pair. The daily refresh re-prices fixtures, so this lights up on its own '
-            'as games are priced over time and played &#8212; <i>beating the closing line is the '
-            'only honest proof of edge</i>.</p>')
+            'open+close pair. The live updater snapshots the closing line just before each kick-off, '
+            'so this lights up on its own as games are priced and played &#8212; <i>beating the '
+            'closing line is the only honest proof of edge</i>.</p>')
     else:
         n = len(cbets)
         beat = sum(1 for b in cbets if b["clv"] > 0)
@@ -760,20 +860,12 @@ def _render(df, name, base, adv, win, preds, summary, friend_rows, upcoming, bet
 <h2><font color="#FFFFFF">&#9917; GROUP STAGE &#8212; WHO'S GOING THROUGH?</font></h2>
 <table cellpadding="6"><tr>{groups_html}</tr></table>
 
-<h2><font color="#FFFFFF">&#128302; REMAINING GROUP-STAGE MATCHES &#8212; PREDICTED</font></h2>
-<table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="75%">
-<tr bgcolor="#000080"><th align="left"><font color="#FFFF00">&nbsp;Kickoff (UTC)</font></th>
-<th align="left"><font color="#FFFF00">&nbsp;Match</font></th>
-<th><font color="#FFFF00">Win / Draw / Win %</font></th>
-<th><font color="#FFFF00">Tip</font></th><th><font color="#FFFF00">xScore</font></th>
-<th><font color="#FFFF00">Model vs bookies*</font></th></tr>
-{up_rows}
-</table>
-<p><font size="1" face="Courier New">% = home win / draw / away win (calibrated). xScore = single most-likely scoreline. * = the model's biggest disagreement with real bookmaker odds (oddschecker, 20 Jun 2026) &#8212; a diagnostic, not a tip; see the calibration health check below.{rot_note}</font></p>
+{bracket_html}
+{upcoming_section}
 
 <h2><font color="#FFFFFF">&#127922; CAN WE BEAT THE BOOKIES?</font></h2>
 <p><b>LIVE &#8212; where the model most disagrees with the real bookies</b>
-(real oddschecker prices, 20 Jun 2026). A "value" line is one where the model's
+({odds_src}). A "value" line is one where the model's
 probability beats the odds even after the margin &#8212; but read the health check:
 these are overwhelmingly the model being wrong, not free money.</p>
 <table border="2" cellpadding="3" cellspacing="0" bgcolor="#FFFFFF" width="90%">
