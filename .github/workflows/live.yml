@@ -1,0 +1,88 @@
+name: Live update (results after games, odds before games)
+
+# A frequent poller that keeps the site fresh around each match, complementing
+# the once-a-day full rebuild in refresh.yml:
+#   * AFTER a game  - pulls newly-finished results, re-learns, rebuilds the page.
+#   * BEFORE a game - snapshots the closing-line match odds for CLV, but only
+#     when a kick-off is imminent (game_imminent.py), so the free odds tier lasts.
+# It commits ONLY when results or odds actually changed, so an idle tick is a
+# no-op (no commit, no Vercel redeploy). Needs two opt-in secrets; each half
+# no-ops without its key:
+#   FOOTBALL_DATA_API_KEY  - free key from football-data.org (live results)
+#   ODDS_API_KEY           - free key from the-odds-api.com (bookmaker odds)
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 min (best-effort; GitHub may delay)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Share the refresh group so the live poller and the daily rebuild never run
+# at once and corrupt the append-only odds history or race on the push.
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ".[api]"
+      - name: Pull finished results (needs FOOTBALL_DATA_API_KEY)
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+        run: |
+          if [ -z "$FOOTBALL_DATA_API_KEY" ]; then
+            echo "FOOTBALL_DATA_API_KEY not set — skipping live results fetch."
+          else
+            wcpredict fetch-results || true
+          fi
+      - name: Snapshot closing-line odds when a kick-off is imminent (CLV)
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          if python scripts/game_imminent.py --within 35 --min-gap 50; then
+            echo "Kick-off imminent — snapshotting match odds (1 credit)."
+            python scripts/fetch_odds.py --skip-outrights || true
+          else
+            echo "No imminent kick-off — skipping odds snapshot to save credits."
+          fi
+      - name: Rebuild & commit only if results or odds changed
+        run: |
+          git config user.name "wc-predictor-bot"
+          git config user.email "bot@users.noreply.github.com"
+          # Nothing new to learn from or price in => idle tick, no commit.
+          if git diff --quiet -- data/; then
+            echo "No new results or odds this tick."
+            exit 0
+          fi
+          wcpredict replay --quiet || true
+          python scripts/sweepstakes.py || true
+          python scripts/make_dashboard.py || true
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No net changes after rebuild."
+            exit 0
+          fi
+          git commit -m "Live update: results / closing-line odds"
+          # Push, retrying against any concurrent commit. This job only ever
+          # regenerates derived artifacts plus the fetched results/odds, so on a
+          # rebase conflict we keep this run's fresh copies (-X theirs favours the
+          # replayed commit). A genuine network failure still surfaces.
+          for attempt in 1 2 3 4; do
+            if git push; then
+              echo "Pushed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Push rejected; rebasing onto latest ${GITHUB_REF_NAME} (attempt ${attempt})."
+            git pull --rebase -X theirs --autostash origin "${GITHUB_REF_NAME}" || git rebase --abort
+            sleep $((attempt * 2))
+          done
+          echo "::error::push still failing after retries." >&2
+          exit 1
