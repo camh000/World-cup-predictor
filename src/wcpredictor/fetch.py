@@ -32,7 +32,8 @@ _ALIASES = {
     "czechrepublic": "CZE", "czechia": "CZE",
     "turkiye": "TUR", "turkey": "TUR",
     "cotedivoire": "CIV", "ivorycoast": "CIV",
-    "caboverde": "CPV", "capeverde": "CPV",
+    "caboverde": "CPV", "capeverde": "CPV", "capeverdeislands": "CPV",
+    "bosniaherzegovina": "BIH",  # provider drops the "and" in "Bosnia and Herzegovina"
     "drcongo": "COD", "congodr": "COD",
     "democraticrepublicofcongo": "COD", "congodemocraticrepublic": "COD",
     "usa": "USA", "unitedstates": "USA", "unitedstatesofamerica": "USA",

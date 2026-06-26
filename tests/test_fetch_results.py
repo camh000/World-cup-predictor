@@ -19,6 +19,7 @@ TEAMS = [
     _team("CIV", "Ivory Coast"),
     _team("COD", "DR Congo"),
     _team("CPV", "Cape Verde"),
+    _team("BIH", "Bosnia and Herzegovina"),
     _team("GER", "Germany"),
 ]
 
@@ -44,6 +45,12 @@ def test_maps_alias_and_accented_names():
     recs = parse_matches(payload, TEAMS)
     pairs = {(r.home_team_id, r.away_team_id) for r in recs}
     assert pairs == {("TUR", "KOR"), ("CUW", "CIV"), ("COD", "CPV")}
+
+
+def test_provider_specific_spellings_map():
+    # Exact football-data.org spellings that previously slipped through.
+    recs = parse_matches([_match("Bosnia-Herzegovina", "Cape Verde Islands", 1, 0)], TEAMS)
+    assert (recs[0].home_team_id, recs[0].away_team_id) == ("BIH", "CPV")
 
 
 def test_group_stage_is_normalised_to_group():
