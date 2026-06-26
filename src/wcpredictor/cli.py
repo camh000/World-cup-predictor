@@ -190,8 +190,18 @@ def cmd_fetch_results(args, paths: Paths) -> int:
     except FetchError as exc:
         sys.exit(f"error: {exc}")
 
+    # Skip matches already in results.csv so repeated runs (the live poller fires
+    # every ~15 min) never append duplicates. Keyed on (home, away, stage), which
+    # is robust to date-format differences and distinguishes a knockout rematch
+    # of a group pairing.
+    existing = {(m.home_team_id, m.away_team_id, m.stage)
+                for m in read_matches(paths.results_csv)}
+    new_records = [r for r in records
+                   if (r.home_team_id, r.away_team_id, r.stage) not in existing]
+    skipped = len(records) - len(new_records)
+
     seq = next_seq(paths.predictions_csv)
-    for rec in records:
+    for rec in new_records:
         append_result(paths.results_csv, rec)
         if args.learn:
             ratings_pre = ratings.copy()
@@ -200,11 +210,12 @@ def cmd_fetch_results(args, paths: Paths) -> int:
             append_prediction(paths.predictions_csv, pred)
             append_ratings_snapshot(paths.ratings_history_csv, seq, rec, ratings)
             seq += 1
-    if args.learn and records:
+    if args.learn and new_records:
         paths.ensure_state_dir()
         ratings.save(paths.ratings_json)
-    print(f"Fetched and stored {len(records)} result(s)"
-          + (" and updated ratings" if args.learn else ""))
+    print(f"Fetched {len(records)} finished match(es); stored {len(new_records)} new"
+          + (f", skipped {skipped} already recorded" if skipped else "")
+          + (" and updated ratings" if args.learn and new_records else ""))
     return 0
 
 

@@ -5,20 +5,52 @@ lets you auto-populate ``data/results.csv`` from a public football API. It
 imports ``requests`` lazily so the core package has zero network dependencies,
 and it fails with a clear message when the extra or API key is missing.
 
-Currently supports football-data.org (set FOOTBALL_DATA_API_KEY). Map the
-provider's team names to your local team ids via ``data/teams.csv`` names.
+Currently supports football-data.org (set FOOTBALL_DATA_API_KEY). The provider's
+team names are mapped to local ids via ``data/teams.csv`` names, with accent
+folding plus an alias table for the handful of names that differ (e.g.
+"Türkiye" -> TUR, "Korea Republic" -> KOR), and its stage labels are normalised
+to match the rest of the pipeline (so group games read ``stage == "group"``).
 """
 
 from __future__ import annotations
 
 import os
+import unicodedata
 from typing import Dict, List, Optional
 
-from .data_io import MatchRecord, Team
+from .data_io import HOST_TEAM_IDS, MatchRecord, Team
 
 
 class FetchError(RuntimeError):
     pass
+
+
+# football-data.org names that don't match data/teams.csv after accent folding.
+# Keys are normalised with ``_norm`` (accent-folded, alphanumeric, lower-case).
+_ALIASES = {
+    "korearepublic": "KOR", "southkorea": "KOR",
+    "czechrepublic": "CZE", "czechia": "CZE",
+    "turkiye": "TUR", "turkey": "TUR",
+    "cotedivoire": "CIV", "ivorycoast": "CIV",
+    "caboverde": "CPV", "capeverde": "CPV",
+    "drcongo": "COD", "congodr": "COD",
+    "democraticrepublicofcongo": "COD", "congodemocraticrepublic": "COD",
+    "usa": "USA", "unitedstates": "USA", "unitedstatesofamerica": "USA",
+    "iran": "IRN", "iriran": "IRN", "islamicrepublicofiran": "IRN",
+    "curacao": "CUW",
+}
+
+# Provider stage labels -> the labels the rest of the pipeline uses. Group games
+# MUST become "group" so the dashboard's group-standings filter counts them.
+_STAGE = {
+    "groupstage": "group", "group": "group",
+    "last32": "round of 32", "roundof32": "round of 32",
+    "last16": "round of 16", "roundof16": "round of 16",
+    "quarterfinals": "quarter finals", "quarterfinal": "quarter finals",
+    "semifinals": "semi finals", "semifinal": "semi finals",
+    "thirdplace": "third place", "playofffor3rdplace": "third place",
+    "final": "final",
+}
 
 
 def _require_requests():
@@ -29,6 +61,56 @@ def _require_requests():
             "The 'api' extra is not installed. Run: pip install -e '.[api]'"
         ) from exc
     return requests
+
+
+def _norm(name: str) -> str:
+    """Accent-fold and reduce to lower-case alphanumerics ("Türkiye" -> turkiye)."""
+    decomposed = unicodedata.normalize("NFKD", name or "")
+    stripped = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return "".join(ch for ch in stripped.lower() if ch.isalnum())
+
+
+def _name_index(teams: List[Team]) -> Dict[str, str]:
+    idx = {_norm(t.name): t.team_id for t in teams}
+    idx.update(_ALIASES)  # explicit aliases win over / extend the canonical names
+    return idx
+
+
+def _norm_stage(stage: str) -> str:
+    return _STAGE.get(_norm(stage), (stage or "").strip().lower() or "tournament")
+
+
+def parse_matches(
+    matches: List[dict], teams: List[Team], competition: str = "WC"
+) -> List[MatchRecord]:
+    """Map football-data.org match objects to :class:`MatchRecord`s.
+
+    Only finished matches where *both* teams resolve to a known local id are
+    returned. A host nation playing at home is treated as a non-neutral game, to
+    match the schedule importer and the hand-entered results.
+    """
+    idx = _name_index(teams)
+    out: List[MatchRecord] = []
+    for m in matches:
+        home_id = idx.get(_norm(m.get("homeTeam", {}).get("name", "")))
+        away_id = idx.get(_norm(m.get("awayTeam", {}).get("name", "")))
+        score = m.get("score", {}).get("fullTime", {})
+        if home_id is None or away_id is None or score.get("home") is None:
+            continue
+        out.append(
+            MatchRecord(
+                date=(m.get("utcDate", "") or "")[:10],
+                home_team_id=home_id,
+                away_team_id=away_id,
+                home_goals=int(score["home"]),
+                away_goals=int(score["away"]),
+                stage=_norm_stage(str(m.get("stage", ""))),
+                competition=competition,
+                # A host playing at home is not a neutral-venue game.
+                neutral=home_id not in HOST_TEAM_IDS,
+            )
+        )
+    return out
 
 
 def fetch_results(
@@ -53,7 +135,6 @@ def fetch_results(
             "https://www.football-data.org/ and export it before fetching."
         )
 
-    name_to_id = _name_index(teams)
     params: Dict[str, str] = {"status": "FINISHED"}
     if since:
         params["dateFrom"] = since
@@ -70,31 +151,4 @@ def fetch_results(
     except Exception as exc:  # pragma: no cover - network path
         raise FetchError(f"Request to football-data.org failed: {exc}") from exc
 
-    out: List[MatchRecord] = []
-    for m in payload.get("matches", []):
-        home_id = name_to_id.get(_norm(m.get("homeTeam", {}).get("name", "")))
-        away_id = name_to_id.get(_norm(m.get("awayTeam", {}).get("name", "")))
-        score = m.get("score", {}).get("fullTime", {})
-        if home_id is None or away_id is None or score.get("home") is None:
-            continue
-        out.append(
-            MatchRecord(
-                date=(m.get("utcDate", "") or "")[:10],
-                home_team_id=home_id,
-                away_team_id=away_id,
-                home_goals=int(score["home"]),
-                away_goals=int(score["away"]),
-                stage=str(m.get("stage", "")).lower() or "tournament",
-                competition=competition,
-                neutral=True,
-            )
-        )
-    return out
-
-
-def _norm(name: str) -> str:
-    return "".join(ch for ch in name.lower() if ch.isalnum())
-
-
-def _name_index(teams: List[Team]) -> Dict[str, str]:
-    return {_norm(t.name): t.team_id for t in teams}
+    return parse_matches(payload.get("matches", []), teams, competition)
