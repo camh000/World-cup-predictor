@@ -74,6 +74,18 @@ def test_unfinished_and_unknown_teams_are_skipped():
     assert parse_matches(payload, TEAMS) == []
 
 
+def test_unmapped_finished_matches_are_reported():
+    unmapped = []
+    payload = [
+        _match("Germany", "Atlantis", 5, 0),                            # finished, unknown away
+        {"utcDate": "2026-06-25", "stage": "GROUP_STAGE",
+         "homeTeam": {"name": "Narnia"}, "awayTeam": {"name": "Mexico"},
+         "score": {"fullTime": {"home": None, "away": None}}},          # unfinished -> ignored
+    ]
+    parse_matches(payload, TEAMS, unmapped=unmapped)
+    assert unmapped == ["Atlantis"]          # only the finished, unmapped name is flagged
+
+
 def test_scores_and_date_are_extracted():
     recs = parse_matches([_match("Germany", "Curaçao", 7, 1)], TEAMS)
     r = recs[0]
