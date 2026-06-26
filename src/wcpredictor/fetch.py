@@ -81,21 +81,35 @@ def _norm_stage(stage: str) -> str:
 
 
 def parse_matches(
-    matches: List[dict], teams: List[Team], competition: str = "WC"
+    matches: List[dict], teams: List[Team], competition: str = "WC",
+    unmapped: Optional[list] = None,
 ) -> List[MatchRecord]:
     """Map football-data.org match objects to :class:`MatchRecord`s.
 
     Only finished matches where *both* teams resolve to a known local id are
     returned. A host nation playing at home is treated as a non-neutral game, to
     match the schedule importer and the hand-entered results.
+
+    If ``unmapped`` is given, the provider names of any *finished* match dropped
+    because a team didn't resolve are appended to it, so the caller can surface a
+    silent name-mapping gap instead of quietly losing the result.
     """
     idx = _name_index(teams)
     out: List[MatchRecord] = []
     for m in matches:
-        home_id = idx.get(_norm(m.get("homeTeam", {}).get("name", "")))
-        away_id = idx.get(_norm(m.get("awayTeam", {}).get("name", "")))
+        home_name = m.get("homeTeam", {}).get("name", "")
+        away_name = m.get("awayTeam", {}).get("name", "")
+        home_id = idx.get(_norm(home_name))
+        away_id = idx.get(_norm(away_name))
         score = m.get("score", {}).get("fullTime", {})
-        if home_id is None or away_id is None or score.get("home") is None:
+        if score.get("home") is None:
+            continue  # not finished
+        if home_id is None or away_id is None:
+            if unmapped is not None:
+                if home_id is None and home_name:
+                    unmapped.append(home_name)
+                if away_id is None and away_name:
+                    unmapped.append(away_name)
             continue
         out.append(
             MatchRecord(
@@ -151,4 +165,12 @@ def fetch_results(
     except Exception as exc:  # pragma: no cover - network path
         raise FetchError(f"Request to football-data.org failed: {exc}") from exc
 
-    return parse_matches(payload.get("matches", []), teams, competition)
+    unmapped: List[str] = []
+    records = parse_matches(payload.get("matches", []), teams, competition, unmapped)
+    if unmapped:
+        import sys
+        names = ", ".join(sorted(set(unmapped)))
+        print(f"warning: {len(set(unmapped))} provider team name(s) did not map to a "
+              f"local id; their finished matches were skipped: {names}. Add an alias "
+              f"in wcpredictor/fetch.py (_ALIASES).", file=sys.stderr)
+    return records
