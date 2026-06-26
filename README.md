@@ -173,6 +173,24 @@ against the free tier's 500/month. Set the `ODDS_API_KEY` secret and it runs in
 the daily `refresh.yml`; without the key it no-ops. It never overwrites a CSV with
 an empty result and prints the remaining credit balance each run.
 
+### Updating around each game (the live poller)
+
+`.github/workflows/live.yml` keeps the site fresh *around* matches, on top of the
+once-a-day full rebuild in `refresh.yml`. It runs every ~15 minutes and:
+
+- **After a game** — pulls newly-finished results (`wcpredict fetch-results`,
+  needs `FOOTBALL_DATA_API_KEY`), re-learns, and rebuilds the dashboard, so the
+  page reflects each result within minutes of full-time.
+- **Before a game** — snapshots the **closing-line** match odds for CLV, but only
+  when a kick-off is imminent. `scripts/game_imminent.py` gates the fetch to the
+  ~35 minutes before kick-off (and dedupes within 50 minutes), so it spends ~1
+  credit per game — bookmakers also tend not to post a market until kick-off is
+  near, which is exactly when the closing line worth measuring exists.
+
+It commits **only** when results or odds actually changed (an idle tick is a
+no-op, so no needless commits or redeploys), and shares a `concurrency` group
+with `refresh.yml` so the two never race. Each half no-ops without its key.
+
 ## Formula 1 (the webring)
 
 A sister page, `f1.html`, applies the same idea to the 2026 F1 season — linked to
