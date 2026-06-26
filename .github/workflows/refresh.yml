@@ -29,17 +29,24 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: pip install -e ".[api]"
-      - name: Fetch results & re-learn
+      - name: Fetch new results (needs FOOTBALL_DATA_API_KEY)
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
         run: |
           if [ -z "$FOOTBALL_DATA_API_KEY" ]; then
-            echo "FOOTBALL_DATA_API_KEY not set — skipping results refresh."
+            echo "FOOTBALL_DATA_API_KEY not set — skipping live results fetch (data/results.csv is maintained manually)."
           else
             wcpredict fetch-results || true
-            wcpredict replay --quiet || true
-            python scripts/sweepstakes.py || true
           fi
+      - name: Re-learn from committed results & rebuild ledger
+        # No API key required: this replays data/results.csv to rebuild
+        # state/ratings.json (git-ignored) so the dashboard reflects the LEARNED
+        # model. Without it, make_dashboard.py silently falls back to flat seed
+        # ratings and produces a dashboard that diverges from the committed one
+        # on every run — the churn that previously caused rebase conflicts.
+        run: |
+          wcpredict replay --quiet || true
+          python scripts/sweepstakes.py || true
       - name: Refresh bookmaker odds (2 credits/run)
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -57,11 +64,23 @@ jobs:
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit."
-          else
-            git commit -m "Auto-refresh results, odds & dashboard"
-            # Rebase onto any concurrent commit before pushing; let a real push
-            # failure surface (no '|| true') instead of silently dropping data.
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
-            git push
+            exit 0
           fi
+          git commit -m "Auto-refresh results, odds & dashboard"
+          # Push, retrying against any concurrent commit. The job only ever
+          # regenerates derived artifacts (dashboards, ledger, odds snapshots)
+          # and never edits source data here, so on a rebase conflict we keep
+          # THIS run's freshly-built copies (-X theirs favours the replayed
+          # commit). A real network failure still surfaces after the retries.
+          for attempt in 1 2 3 4; do
+            if git push; then
+              echo "Pushed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Push rejected; rebasing onto latest ${GITHUB_REF_NAME} (attempt ${attempt})."
+            git pull --rebase -X theirs --autostash origin "${GITHUB_REF_NAME}" || git rebase --abort
+            sleep $((attempt * 2))
+          done
+          echo "::error::push still failing after retries." >&2
+          exit 1
 
