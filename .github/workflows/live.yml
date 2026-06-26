@@ -12,7 +12,15 @@ name: Live update (results after games, odds before games)
 #   ODDS_API_KEY           - free key from the-odds-api.com (bookmaker odds)
 on:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 min (best-effort; GitHub may delay)
+    # Games kick off only at :00 (100 of them) and a handful at :30, between
+    # ~16:00 and ~04:00 UTC. Fire ~20 and ~10 min before each :00 and :30 slot so
+    # the odds snapshot lands on the closing line; two shots per slot because
+    # GitHub delays scheduled runs (game_imminent + the min-gap collapse them to
+    # ~one snapshot per kick-off). These runs also pull results after games.
+    - cron: "10,20,40,50 15-23,0-3 * * *"
+    # Quiet-hours catch-up so a late-finishing result is still pulled within ~an
+    # hour even outside the pre-kick-off windows.
+    - cron: "15 5,11 * * *"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +55,7 @@ jobs:
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
-          if python scripts/game_imminent.py --within 35 --min-gap 50; then
+          if python scripts/game_imminent.py --within 35 --min-gap 20; then
             echo "Kick-off imminent — snapshotting match odds (1 credit)."
             python scripts/fetch_odds.py --skip-outrights || true
           else

@@ -176,16 +176,20 @@ an empty result and prints the remaining credit balance each run.
 ### Updating around each game (the live poller)
 
 `.github/workflows/live.yml` keeps the site fresh *around* matches, on top of the
-once-a-day full rebuild in `refresh.yml`. It runs every ~15 minutes and:
+once-a-day full rebuild in `refresh.yml`. Because almost every game kicks off on
+the hour (a few on the half-hour), it is scheduled to fire ~20 and ~10 minutes
+before each `:00`/`:30` slot during the active UTC hours (two shots, since
+GitHub delays scheduled runs), plus a couple of quiet-hours catch-ups. Each run:
 
 - **After a game** — pulls newly-finished results (`wcpredict fetch-results`,
   needs `FOOTBALL_DATA_API_KEY`), re-learns, and rebuilds the dashboard, so the
   page reflects each result within minutes of full-time.
 - **Before a game** — snapshots the **closing-line** match odds for CLV, but only
   when a kick-off is imminent. `scripts/game_imminent.py` gates the fetch to the
-  ~35 minutes before kick-off (and dedupes within 50 minutes), so it spends ~1
-  credit per game — bookmakers also tend not to post a market until kick-off is
-  near, which is exactly when the closing line worth measuring exists.
+  ~35 minutes before kick-off (and dedupes within 20 minutes, so the two pre-slot
+  shots collapse to ~1 snapshot per game) — bookmakers also tend not to post a
+  market until kick-off is near, which is exactly when the closing line worth
+  measuring exists.
 
 It commits **only** when results or odds actually changed (an idle tick is a
 no-op, so no needless commits or redeploys), and shares a `concurrency` group
