@@ -67,7 +67,12 @@ def should_snapshot(now: datetime, kickoffs: List[datetime], last_snap: Optional
     window_end = now + timedelta(minutes=within_min)
     imminent = sorted(k for k in kickoffs if now <= k <= window_end)
     if not imminent:
-        return False, f"no kick-off within the next {within_min} min"
+        future = sorted(k for k in kickoffs if k >= now)
+        if future:
+            mins = (future[0] - now).total_seconds() / 60
+            return False, (f"no kick-off within {within_min} min "
+                           f"(next is {future[0]:%Y-%m-%d %H:%MZ}, in {mins:.0f} min)")
+        return False, "no upcoming kick-off in the schedule"
     if last_snap is not None and (now - last_snap) < timedelta(minutes=min_gap_min):
         ago = (now - last_snap).total_seconds() / 60
         return False, f"a snapshot was taken {ago:.0f} min ago (< {min_gap_min} min gap)"
@@ -93,7 +98,9 @@ def main() -> None:
 
     go, why = should_snapshot(now, parse_kickoffs(args.schedule),
                               last_snapshot(args.history), args.within, args.min_gap)
-    print(("SNAPSHOT: " if go else "SKIP: ") + why)
+    # Schedule kick-offs and this clock are both UTC; GitHub shows the *run* time
+    # in the viewer's local zone, so print UTC here to make the alignment obvious.
+    print(f"now {now:%Y-%m-%d %H:%MZ} (UTC) | " + ("SNAPSHOT: " if go else "SKIP: ") + why)
     sys.exit(0 if go else 1)
 
 
