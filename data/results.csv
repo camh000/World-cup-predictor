@@ -61,3 +61,7 @@ date,home_team_id,away_team_id,home_goals,away_goals,stage,competition,neutral
 2026-06-26,PAR,AUS,0,0,group,WC2026,true
 2026-06-26,NOR,FRA,1,4,group,WC,true
 2026-06-26,SEN,IRQ,5,0,group,WC,true
+2026-06-27,URU,ESP,0,1,group,WC,true
+2026-06-27,CPV,SAU,0,0,group,WC,true
+2026-06-27,NZL,BEL,1,5,group,WC,true
+2026-06-27,EGY,IRN,1,1,group,WC,true
