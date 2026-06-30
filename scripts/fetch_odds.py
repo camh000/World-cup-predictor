@@ -9,14 +9,19 @@ Credit-thrifty by design (free tier = 500/month):
   * we never overwrite a CSV with an empty result, and we print the remaining
     credit balance returned by the API after every call.
 
-By default it pulls only bet365's prices (the-odds-api ``bookmakers=bet365``,
-which costs the same as one region). Set ODDS_API_KEY (a free key from
-the-odds-api.com). Without it this no-ops, so it is safe to wire into CI. Usage:
+It fetches a whole region (default ``uk``, 1 credit/market) and PREFERS one
+bookmaker's price per event when that book is quoting it (default ``bet365``),
+otherwise falls back to the best price across the region's books. This never
+comes back empty just because the preferred book isn't quoting a given round --
+which is exactly what happened when bet365 dropped out of the-odds-api's World
+Cup feed and the old ``bookmakers=bet365`` filter froze the odds. Set
+ODDS_API_KEY (a free key from the-odds-api.com); without it this no-ops, so it is
+safe to wire into CI. Usage:
 
-    python scripts/fetch_odds.py                     # bet365 match + outright (2 credits)
-    python scripts/fetch_odds.py --skip-outrights    # bet365 match only (1 credit)
-    python scripts/fetch_odds.py --bookmaker ''      # best-odds across --regions instead
-    python scripts/fetch_odds.py --bookmaker pinnacle  # a different single book
+    python scripts/fetch_odds.py                     # prefer bet365, else best-of-uk (2 credits)
+    python scripts/fetch_odds.py --skip-outrights    # match odds only (1 credit)
+    python scripts/fetch_odds.py --bookmaker ''      # pure best-odds across --regions
+    python scripts/fetch_odds.py --bookmaker pinnacle  # prefer a different book
 """
 
 from __future__ import annotations
@@ -54,21 +59,27 @@ def _get(path: str, params: dict):
 
 
 def _best_prices(event, bookmaker=None):
-    """Best decimal price per outcome name across an event's bookmakers.
+    """Decimal price per outcome name for an event.
 
-    If ``bookmaker`` is given, only that bookmaker's prices are considered (so the
-    "best" is simply its quote); otherwise the max across all books is taken.
+    With ``bookmaker`` set we PREFER that book: if it is quoting the event we use
+    its prices; otherwise (or with no preference) we fall back to the best price
+    across every book in the response. Preferring rather than hard-filtering means
+    a pull never comes back empty just because the preferred book isn't quoting a
+    given round (e.g. bet365 dropping out of the World Cup feed).
     """
-    best = {}
+    best, prefer = {}, {}
     for bk in event.get("bookmakers", []):
-        if bookmaker and bk.get("key") != bookmaker:
-            continue
+        is_pref = bool(bookmaker) and bk.get("key") == bookmaker
         for mkt in bk.get("markets", []):
             for oc in mkt.get("outcomes", []):
                 nm, price = oc.get("name"), oc.get("price")
-                if nm and price and price > best.get(nm, 0.0):
+                if not (nm and price):
+                    continue
+                if price > best.get(nm, 0.0):
                     best[nm] = price
-    return best
+                if is_pref:
+                    prefer[nm] = price
+    return prefer or best
 
 
 def _select_keys(sports):
@@ -200,18 +211,19 @@ def _load_dotenv(path: Path = ROOT / ".env") -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bookmaker", default="bet365",
-                    help="only pull this bookmaker's odds (default bet365); "
-                         "pass --bookmaker '' for best-odds across --regions")
+                    help="prefer this bookmaker's price when it is quoting (default "
+                         "bet365); falls back to best-of-region. '' = pure best-odds")
     ap.add_argument("--regions", default="uk",
-                    help="comma list, used only when --bookmaker is empty; 1 credit PER region")
+                    help="comma list of regions to fetch; 1 credit PER region per market")
     ap.add_argument("--skip-outrights", action="store_true", help="match odds only (1 credit)")
     ap.add_argument("--skip-matches", action="store_true", help="outright odds only (1 credit)")
     args = ap.parse_args()
 
-    # the-odds-api takes EITHER a bookmakers filter OR regions. Selecting a single
-    # bookmaker costs the same as one region (1 credit per market).
+    # Always fetch a whole region, then PREFER --bookmaker's quote per event (else
+    # best-of-region). Hard-filtering to one book froze the odds when bet365 left
+    # the-odds-api's World Cup feed.
     bookmaker = args.bookmaker or None
-    scope = {"bookmakers": bookmaker} if bookmaker else {"regions": args.regions}
+    scope = {"regions": args.regions}
 
     _load_dotenv()
     api_key = os.environ.get("ODDS_API_KEY")
@@ -249,7 +261,7 @@ def main() -> None:
                 _append(DATA / "odds_history.csv", ["fetched_at"] + header,
                         [[fetched_at] + r for r in rows])
                 print(f"Wrote data/odds.csv ({len(rows)}/{seen} matches) from '{match_key}' "
-                      f"[{bookmaker or args.regions}] + snapshot -> data/odds_history.csv.")
+                      f"[prefer {bookmaker or 'best'}/{args.regions}] + snapshot -> data/odds_history.csv.")
             else:
                 print("No match odds returned (kept existing data/odds.csv).")
 
@@ -271,7 +283,7 @@ def main() -> None:
                 _append(DATA / "outright_history.csv", ["fetched_at"] + header,
                         [[fetched_at] + r for r in rows])
                 print(f"Wrote data/outright_odds.csv ({len(rows)}/{seen} teams) from '{winner_key}' "
-                      f"[{bookmaker or args.regions}] + snapshot -> data/outright_history.csv.")
+                      f"[prefer {bookmaker or 'best'}/{args.regions}] + snapshot -> data/outright_history.csv.")
             else:
                 print("No outright odds returned (kept existing outright_odds.csv).")
 
