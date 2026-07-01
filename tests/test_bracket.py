@@ -41,22 +41,15 @@ def _fixture():
     return base, ratings, name, teams
 
 
-def test_no_bracket_until_group_stage_complete():
+def test_group_stage_complete_detects_outstanding_game():
+    # (The live knockout panel is built from real results/odds now, and is covered
+    # by test_knockout.py; here we just guard the completeness helper it gates on.)
     md = _load()
-    base, ratings, name, _ = _fixture()
+    base, _, _, _ = _fixture()
+    assert md.group_stage_complete(base) is True
     one = next(iter(next(iter(base.values())).values()))
     one.played = 2  # one game outstanding -> not complete
     assert md.group_stage_complete(base) is False
-    assert md._knockout_bracket(base, Params(), ratings, name) == ""
-
-
-def test_bracket_has_16_ties_when_complete():
-    md = _load()
-    base, ratings, name, _ = _fixture()
-    assert md.group_stage_complete(base) is True
-    html = md._knockout_bracket(base, Params(), ratings, name)
-    assert "ROUND OF 32" in html
-    assert html.count("Round of 32</font>") == 16
 
 
 def test_bracket_uses_32_distinct_qualified_teams():
