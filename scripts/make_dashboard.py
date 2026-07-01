@@ -395,8 +395,29 @@ def _clinch_status(base, adv, played_pairs):
         it (so top-2 is impossible) AND the simulation gives it ~no best-third
         hope either;
       * otherwise None -> show the simulated probability, never a false promise.
+
+    Once the group stage is COMPLETE the tables are final, so every team is
+    resolved to QUALIFIED/OUT outright (the top two per group plus the eight best
+    third-placed teams, by the full tiebreakers) -- no team should still read as a
+    probability once its group is done.
     """
     from itertools import combinations, product
+
+    if group_stage_complete(base):
+        from wcpredictor.tournament import N_BEST_THIRDS, best_third_placed
+        status, thirds = {}, []
+        for g, stands in base.items():
+            table = sorted(stands.values(), key=lambda s: s.sort_key())
+            status[table[0].team_id] = "QUALIFIED"
+            status[table[1].team_id] = "QUALIFIED"
+            for s in table[3:]:
+                status[s.team_id] = "OUT"
+            if len(table) >= 3:
+                thirds.append(table[2])
+        best_ids = {s.team_id for s in best_third_placed(thirds, N_BEST_THIRDS)}
+        for s in thirds:
+            status[s.team_id] = "QUALIFIED" if s.team_id in best_ids else "OUT"
+        return status
 
     status = {}
     for g, stands in base.items():
