@@ -169,7 +169,7 @@ def main() -> None:
     clv_data = _clv_scoreboard(paths, preds, gamma)
     outright = _load_outright(paths)
 
-    bracket_html = _knockout_bracket(base, params, ratings, name)
+    bracket_html = _knockout_bracket(paths, base, params, ratings, name)
 
     html = _render(df, name, base, adv, win, preds, summary, friend_rows,
                    upcoming, bet, calib, outright, clinch, clv_data, bracket_html)
@@ -458,55 +458,77 @@ def group_stage_complete(base) -> bool:
         s.played >= 3 for tbl in base.values() for s in tbl.values())
 
 
-def _knockout_bracket(base, params, ratings, name) -> str:
-    """Round-of-32 bracket HTML, shown once the group stage is complete.
+def _knockout_bracket(paths, base, params, ratings, name) -> str:
+    """Knockout tracker built from the REAL data, not a reconstructed bracket.
 
-    Returns "" until every group game is played. Resolves the official 2026
-    bracket (including the eight best third-placed teams, via the engine's FIFA
-    allocation) from the final standings, then shows the model's predicted winner
-    of each tie. Draws are split 50/50 into the knockout win probability, since a
-    knockout tie cannot end level (extra time / penalties decide it).
+    Shows played knockout games (data/results.csv, stage != 'group') with their
+    scores and the side that went through, then the actual upcoming knockout ties
+    (the priced fixtures in data/odds.csv, once the group stage is over) with the
+    model's knockout win probability. Returns "" until the knockouts start.
+
+    We deliberately do NOT rebuild the bracket from the model's own third-place
+    allocation: it mis-slots the eight best thirds (it paired Germany with Bosnia
+    when the real draw sent Germany to Paraguay), so the results file is the single
+    source of truth and this updates itself as games are played.
     """
-    if not group_stage_complete(base):
-        return ""
     from wcpredictor.history import forecast
-    from wcpredictor.tournament import R32_2026, _build_r32
 
-    winners, runners, thirds_by_group = {}, {}, {}
-    for g, tbl in base.items():
-        ordered = sorted(tbl.values(), key=lambda s: s.sort_key())
-        winners[g], runners[g], thirds_by_group[g] = (
-            ordered[0].team_id, ordered[1].team_id, ordered[2])
-    ties = _build_r32(R32_2026, winners, runners, thirds_by_group)
+    all_matches = read_matches(paths.results_csv)
+    ko = sorted((m for m in all_matches if m.stage != "group"), key=lambda m: m.date)
+    if not ko and not group_stage_complete(base):
+        return ""   # still in the group stage; the UPCOMING panel covers those
+    played = {frozenset((m.home_team_id, m.away_team_id)) for m in all_matches}
+    upcoming = [(h, a) for (h, a) in _load_odds(paths) if frozenset((h, a)) not in played]
+    if not ko and not upcoming:
+        return ""
 
-    def tie_box(i, h, a):
+    def _grid(boxes, cols=4):
+        cells = "".join(f'<td valign="top">{b}</td>' + ("</tr><tr>" if (i + 1) % cols == 0 else "")
+                        for i, b in enumerate(boxes))
+        return f'<table cellpadding="6"><tr>{cells}</tr></table>'
+
+    def result_box(m):
+        hg, ag = m.home_goals, m.away_goals
+        winner = None if hg == ag else (m.home_team_id if hg > ag else m.away_team_id)
+        def cell(tid, goals):
+            through = winner == tid
+            nm = f"<b>{name.get(tid, tid)}</b>" if through else name.get(tid, tid)
+            arrow = "&#9656;" if through else "&nbsp;"
+            return (f'<tr bgcolor="{"#CCFFCC" if through else "#FFFFFF"}"><td>{arrow}&nbsp;{nm}</td>'
+                    f'<td align="center"><b>{goals}</b></td></tr>')
+        note = " &middot; pens" if winner is None else ""
+        return ('<table border="1" cellpadding="2" cellspacing="0" width="210" bgcolor="#FFFFFF">'
+                f'<tr bgcolor="#006400"><td colspan="2"><font color="#FFFF00" size="1">'
+                f'&nbsp;{m.stage.title()} &middot; {m.date}{note}</font></td></tr>'
+                f'{cell(m.home_team_id, hg)}{cell(m.away_team_id, ag)}</table>')
+
+    def predict_box(h, a):
         probs, _ = forecast(ratings, params, h, a, True)
         ph, pa = probs[0] + 0.5 * probs[1], probs[2] + 0.5 * probs[1]
-        home_through = ph >= pa
+        home = ph >= pa
         def cell(tid, p, win):
-            nm = (f"<b>{name.get(tid, tid)}</b>" if win else name.get(tid, tid))
+            nm = f"<b>{name.get(tid, tid)}</b>" if win else name.get(tid, tid)
             arrow = "&#9656;" if win else "&nbsp;"
-            return (f'<tr bgcolor="{"#CCFFCC" if win else "#FFFFFF"}">'
-                    f'<td>{arrow}&nbsp;{nm}</td>'
+            return (f'<tr bgcolor="{"#CCFFCC" if win else "#FFFFFF"}"><td>{arrow}&nbsp;{nm}</td>'
                     f'<td align="center"><font size="1">{p*100:.0f}%</font></td></tr>')
-        return (f'<table border="1" cellpadding="2" cellspacing="0" width="220" '
-                f'bgcolor="#FFFFFF"><tr bgcolor="#000080"><td colspan="2">'
-                f'<font color="#FFFF00" size="1">&nbsp;Match {73 + i} &#8212; Round of 32'
-                f'</font></td></tr>{cell(h, ph, home_through)}{cell(a, pa, not home_through)}'
-                f'</table>')
+        return ('<table border="1" cellpadding="2" cellspacing="0" width="210" bgcolor="#FFFFFF">'
+                '<tr bgcolor="#000080"><td colspan="2"><font color="#FFFF00" size="1">'
+                '&nbsp;Next up</font></td></tr>'
+                f'{cell(h, ph, home)}{cell(a, pa, not home)}</table>')
 
-    # Two columns = the two halves of the draw (adjacent ties meet next round).
-    left = "".join(tie_box(i, h, a) for i, (h, a) in enumerate(ties[:8]))
-    right = "".join(tie_box(i + 8, h, a) for i, (h, a) in enumerate(ties[8:]))
-    return (
-        '<h2><font color="#FFFFFF">&#127942; KNOCKOUT BRACKET &#8212; ROUND OF 32</font></h2>'
-        '<p><font size="1" face="Courier New">The group stage is done &#8212; here are the '
-        'next matches. Each box shows the model&rsquo;s knockout win probability (draws split '
-        '50/50 for extra time / penalties); the <b>likely winner</b> is highlighted. The eight '
-        'best third-placed teams are slotted by FIFA&rsquo;s allocation table. The two columns '
-        'are the two halves of the draw.</font></p>'
-        f'<table cellpadding="8"><tr><td valign="top">{left}</td>'
-        f'<td valign="top">{right}</td></tr></table>')
+    out = '<h2><font color="#FFFFFF">&#127942; KNOCKOUT STAGE</font></h2>'
+    if ko:
+        out += ('<h3><font color="#FFFFFF">Results so far</font></h3>'
+                '<p><font size="1" face="Courier New">Real scores from the results file; the side '
+                'that went through is highlighted (a level tie was decided on penalties).</font></p>'
+                + _grid([result_box(m) for m in ko]))
+    if upcoming:
+        out += ('<h3><font color="#FFFFFF">Coming up</font></h3>'
+                '<p><font size="1" face="Courier New">The actual next ties (as priced in the odds '
+                'feed). Each box shows the model&rsquo;s knockout win probability (draws split 50/50 '
+                'for extra time / penalties); likely winner highlighted.</font></p>'
+                + _grid([predict_box(h, a) for h, a in upcoming]))
+    return out
 
 
 def _fmt_date(iso: str | None) -> str | None:
