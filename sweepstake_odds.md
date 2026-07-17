@@ -1,6 +1,6 @@
 # World Cup 2026 Sweepstake Odds
 
-_Model estimate as of 2026-07-16 (50,000 simulations from the current post-matchday ratings)._
+_Model estimate as of 2026-07-17 (50,000 simulations from the current post-matchday ratings)._
 
 Win chance = combined title probability of a person's team(s).
 
@@ -63,7 +63,7 @@ Win chance = combined title probability of a person's team(s).
 | 32 | Lynne S | 0.85% | Japan |
 | 33 | Sheril T | 0.85% | Japan |
 | 34 | David T | 0.82% | Uruguay, Senegal |
-| 35 | Andy B | 0.62% | Turkey, Algeria, Scotland, New Zealand |
+| 35 | Andy B | 0.62% | Turkey, Scotland, Algeria, New Zealand |
 | 36 | Zoe J | 0.56% | Iran, Panama, Qatar |
 | 37 | Ryan K | 0.54% | United States, Uzbekistan |
 | 38 | Jaydene V | 0.53% | Uruguay |
