@@ -1,6 +1,6 @@
 # World Cup 2026 Sweepstake Odds
 
-_Model estimate as of 2026-08-11 (50,000 simulations from the current post-matchday ratings)._
+_Model estimate as of 2026-08-12 (50,000 simulations from the current post-matchday ratings)._
 
 Win chance = combined title probability of a person's team(s).
 
